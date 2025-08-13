@@ -1,5 +1,5 @@
 import { Categoria } from "./enums/Categoria";
-import {Estado } from "./enums/Estado";
+import { Estado } from "./enums/Estado";
 import { Alquiler } from "./Alquiler";
 
 export type Articulo = {

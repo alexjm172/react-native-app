@@ -1,0 +1,2 @@
+import { AuthRepository } from '../../repositories/AuthRepository';
+export class LoginWithEmail { constructor(private repo: AuthRepository) {} exec(e: string, p: string) { return this.repo.signInWithEmail(e,p); } }
