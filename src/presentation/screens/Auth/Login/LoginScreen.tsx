@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, KeyboardAvoidingView, Platform, ImageBackground,
   TouchableOpacity, ActivityIndicator, StatusBar
 } from 'react-native';
-import { useAuthVM } from './viewmodel/AuthViewModel';
+import { useAuthVM } from '../../../viewmodels/AuthViewModel';
 import { loginStyles as styles } from './styles/Login.styles';
 
 const BG = require('../../../../assets/fondo_login.png');

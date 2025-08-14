@@ -1,8 +1,8 @@
 import { useMemo, useState, useCallback } from 'react';
-import { AuthRepositoryImpl } from '../../../../../data/repositories/AuthRepositoryImpl';
-import { LoginWithEmail } from '../../../../../domain/usecases/auth/LoginWithEmailUseCase';
-import { RegisterWithEmail } from '../../../../../domain/usecases/auth/RegisterWithEmailUseCase';
-import { mapFirebaseAuthError } from '../../../../../core/errors/firebaseAuthError.mapper';
+import { AuthRepositoryImpl } from '../../data/repositories/AuthRepositoryImpl';
+import { LoginWithEmail } from '../../domain/usecases/auth/LoginWithEmailUseCase';
+import { RegisterWithEmail } from '../../domain/usecases/auth/RegisterWithEmailUseCase';
+import { mapFirebaseAuthError } from '../../core/errors/firebaseAuthError.mapper';
 type Mode = 'login' | 'register';
 
 export type AuthVMState = {

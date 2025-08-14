@@ -11,11 +11,13 @@ export type AppColors = {
   textMuted: string;   
   tabBg: string;       
   error: string;
+  black: string;
 };
 
 // Exporta paleta completa
 export const COLORS: AppColors = {
   pantone: '#b6cada',
+  black: '#000000',
   screenBg: '#000000',
   dim: 'rgba(0,0,0,0.07)',
   cardBg: 'rgba(237,237,237,0.93)',
