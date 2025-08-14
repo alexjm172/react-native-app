@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform, ActionSheetIOS } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { pickerStyles as styles, DARK } from './styles/styles';
+import { pickerStyles as styles, DARK } from './styles/CategoryPicker.styles';
 import type { CategoryId, CategoryOption } from '../../viewmodels/types/Category';
 
 type Props = {

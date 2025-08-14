@@ -1,3 +1,4 @@
+// Tipos y constantes compartidas para categorías
 
 export const CATEGORY_IDS = [
   'jardineria',
@@ -20,3 +21,17 @@ export const CATEGORY_LABELS: Record<CategoryId, string> = {
 };
 
 export const DEFAULT_CATEGORY: CategoryId = 'jardineria';
+
+//lista de opciones para pickers
+export const CATEGORY_OPTIONS: CategoryOption[] =
+  CATEGORY_IDS.map(id => ({ id, label: CATEGORY_LABELS[id] }));
+
+// Mapeo UI → Firestore (con acentos y mayúsculas)
+const FIRESTORE_DOC_MAP: Record<CategoryId, string> = {
+  jardineria: 'Jardinería',
+  cocina: 'Cocina',
+  deporte: 'Deporte',
+  electricidad: 'Electricidad',
+  electronica: 'Electrónica',
+};
+export const toFirestoreDocId = (id: CategoryId) => FIRESTORE_DOC_MAP[id];

@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Articulo } from '../../domain/entities/Articulo';
 import { GetArticulosByCategoria } from '../../domain/usecases/GetArticulosByCategoria';
+
 import {
   CATEGORY_IDS,
   CATEGORY_LABELS,
+  CATEGORY_OPTIONS,
   DEFAULT_CATEGORY,
-  CategoryId,
-  CategoryOption,
+  type CategoryId,
+  type CategoryOption,
+  toFirestoreDocId,
 } from './types/Category';
 
 const LAST_CATEGORY_KEY = 'last_category';
@@ -18,16 +21,15 @@ export const useHomeVM = (ucGetByCategoria: GetArticulosByCategoria) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const categories: CategoryOption[] = useMemo(
-    () => CATEGORY_IDS.map(id => ({ id, label: CATEGORY_LABELS[id] })),
-    []
-  );
+  // Fuente de categorías para la UI
+  const categories: CategoryOption[] = useMemo(() => CATEGORY_OPTIONS, []);
 
   const load = useCallback(async (cat: CategoryId) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await ucGetByCategoria.execute(cat);
+      const docId = toFirestoreDocId(cat);      // 👈 mapping UI → Firestore
+      const result = await ucGetByCategoria.execute(docId);
       setItems(result);
       await AsyncStorage.setItem(LAST_CATEGORY_KEY, cat);
     } catch (e: any) {
@@ -37,7 +39,6 @@ export const useHomeVM = (ucGetByCategoria: GetArticulosByCategoria) => {
     }
   }, [ucGetByCategoria]);
 
-  // restaurar última categoría o por defecto
   useEffect(() => {
     (async () => {
       try {
@@ -48,6 +49,7 @@ export const useHomeVM = (ucGetByCategoria: GetArticulosByCategoria) => {
           return;
         }
       } catch {}
+      setSelectedId(DEFAULT_CATEGORY);
       load(DEFAULT_CATEGORY);
     })();
   }, [load]);
