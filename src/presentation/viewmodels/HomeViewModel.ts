@@ -20,6 +20,7 @@ export const useHomeVM = (ucGetByCategoria: GetArticulosByCategoria) => {
   const [items, setItems] = useState<Articulo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fabOpen, setFabOpen] = useState(false);
 
   // Fuente de categorías para la UI
   const categories: CategoryOption[] = useMemo(() => CATEGORY_OPTIONS, []);
@@ -56,8 +57,12 @@ export const useHomeVM = (ucGetByCategoria: GetArticulosByCategoria) => {
 
   const onChangeCategoria = useCallback((id: CategoryId) => {
     setSelectedId(id);
+    setFabOpen(false);
     load(id);
   }, [load]);
+
+  const toggleFab = useCallback(() => setFabOpen(v => !v), []);
+  const closeFab  = useCallback(() => setFabOpen(false), []);
 
   return {
     categories,
@@ -67,5 +72,8 @@ export const useHomeVM = (ucGetByCategoria: GetArticulosByCategoria) => {
     loading,
     error,
     reload: () => load(selectedId),
+    fabOpen,
+    toggleFab,
+    closeFab,
   };
 };

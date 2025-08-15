@@ -1,3 +1,4 @@
+
 /* Mapea códigos de Firebase Auth (Web/React-Native) a mensajes en español. */
 export const FIREBASE_AUTH_ERROR_MESSAGES: Record<string, string> = {
   // Email/password + credenciales

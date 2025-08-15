@@ -14,8 +14,8 @@ export type Articulo = {
     precioPorDia?: number;
     precioPorHora?: number;
     precioPorSemana?: number;
-    latitud?: number;
-    longitud?: number;
+    latitud: number;
+    longitud: number;
     marca?: string;
     rango?:number;
 };

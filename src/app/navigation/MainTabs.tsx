@@ -1,7 +1,8 @@
+// src/app/navigation/MainTabs.tsx
 import React from 'react';
 import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons, type IoniconsIconName } from '@react-native-vector-icons/ionicons'; 
 
 import { COLORS } from '../theme/colors';
 
@@ -19,6 +20,21 @@ export type MainTabsParamList = {
 
 const Tab = createBottomTabNavigator<MainTabsParamList>();
 
+function getIconName(routeName: keyof MainTabsParamList, focused: boolean): IoniconsIconName {
+  switch (routeName) {
+    case 'HomeTab':
+      return focused ? 'home' : 'home-outline';
+    case 'CarritoTab':
+      return focused ? 'cart' : 'cart-outline';
+    case 'MapaTab':
+      return focused ? 'map' : 'map-outline';
+    case 'ProfileTab':
+      return focused ? 'person' : 'person-outline';
+    default:
+      return 'ellipse';
+  }
+}
+
 export default function MainTabs() {
   return (
     <Tab.Navigator
@@ -26,30 +42,16 @@ export default function MainTabs() {
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: COLORS.pantone,
-        tabBarInactiveTintColor: COLORS.textMuted ?? '#8A8A8A',
+        tabBarInactiveTintColor: (COLORS as any).textMuted ?? '#8A8A8A',
         tabBarStyle: {
-          backgroundColor: COLORS.tabBg ?? '#fff',
+          backgroundColor: (COLORS as any).tabBg ?? '#fff',
           borderTopColor: 'transparent',
           height: Platform.select({ ios: 60, android: 60 }),
           paddingBottom: Platform.select({ ios: 10, android: 8 }),
           paddingTop: 6,
         },
         tabBarIcon: ({ focused, color, size }) => {
-          let name: string = 'ellipse';
-          switch (route.name) {
-            case 'HomeTab':
-              name = focused ? 'home' : 'home-outline';
-              break;
-            case 'CarritoTab':
-              name = focused ? 'cart' : 'cart-outline';
-              break;
-            case 'MapaTab':
-              name = focused ? 'map' : 'map-outline';
-              break;
-            case 'ProfileTab':
-              name = focused ? 'person' : 'person-outline';
-              break;
-          }
+          const name = getIconName(route.name as keyof MainTabsParamList, focused);
           return <Ionicons name={name} size={size} color={color} />;
         },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },

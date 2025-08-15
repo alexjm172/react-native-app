@@ -1,14 +1,14 @@
 import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator from './src/app/navigation/RootNavigator';
 import { AuthProvider } from './src/app/providers/AuthProvider';
-import { View } from 'react-native';
 
 export default function App() {
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaProvider>
       <AuthProvider>
         <RootNavigator />
       </AuthProvider>
-    </View>
+    </SafeAreaProvider>
   );
 }
