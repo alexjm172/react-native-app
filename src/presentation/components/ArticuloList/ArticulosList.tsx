@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
 import type { Articulo } from '../../../domain/entities/Articulo';
 import { articuloListStyles as styles } from './styles/ArticuloList.styles';
 import ArticuloThumb from './components/ArticuloThumb';
@@ -21,15 +22,15 @@ type Props = {
   onToggleFavorite?: (articuloId: string) => void;
 };
 
-export default function ArticuloList({
+function ArticuloListCmp({
   items, loading, error, reload, onPressItem,
   onPressFavorite, onPressAddToCart, onPressShowOnMap,
-  favorites, onToggleFavorite
+  favorites, onToggleFavorite,
 }: Props) {
+
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
 
   const goToMap = (a: Articulo) => {
-    // admite latitud/longitud o lat/lng
     const lat = (a as any).latitud ?? (a as any).lat;
     const lng = (a as any).longitud ?? (a as any).lng;
     if (typeof lat === 'number' && typeof lng === 'number') {
@@ -63,9 +64,18 @@ export default function ArticuloList({
       onRefresh={reload}
       refreshing={loading}
       renderItem={({ item }) => {
-        const isFav = favorites?.has(item.id);
+        const isFav = favorites?.has(item.id) ?? false;
+
+        const lat = (item as any).latitud ?? (item as any).lat;
+        const lng = (item as any).longitud ?? (item as any).lng;
+        const canShowOnMap = typeof lat === 'number' && typeof lng === 'number';
+
         return (
-          <TouchableOpacity style={styles.row} activeOpacity={0.9} onPress={() => onPressItem?.(item)}>
+          <TouchableOpacity
+            style={styles.row}
+            activeOpacity={0.9}
+            onPress={() => onPressItem?.(item)}
+          >
             {/* Arriba: imagen izquierda + textos derecha */}
             <View style={styles.rowTop}>
               <ArticuloThumb articulo={item} size={64} />
@@ -82,24 +92,38 @@ export default function ArticuloList({
             <View style={styles.actionsRow}>
               <TouchableOpacity
                 style={styles.actionBtn}
-                onPress={() => onToggleFavorite ? onToggleFavorite(item.id) : onPressFavorite?.(item)}
+                onPress={() =>
+                  onToggleFavorite ? onToggleFavorite(item.id) : onPressFavorite?.(item)
+                }
                 activeOpacity={0.85}
+                accessibilityLabel={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
               >
-                <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={20} color="#ffffff" />
+                <Ionicons
+                  name={isFav ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={isFav ? '#EF4444' : '#ffffff'}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={() => onPressAddToCart?.(item)}
                 activeOpacity={0.85}
+                accessibilityLabel="Añadir al carrito"
               >
                 <Ionicons name="cart-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => (onPressShowOnMap ? onPressShowOnMap(item) : goToMap(item))}
+                style={[styles.actionBtn, !canShowOnMap && { opacity: 0.5 }]}
+                onPress={() =>
+                  canShowOnMap
+                    ? (onPressShowOnMap ? onPressShowOnMap(item) : goToMap(item))
+                    : undefined
+                }
                 activeOpacity={0.85}
+                accessibilityLabel="Ver en el mapa"
+                disabled={!canShowOnMap}
               >
                 <Ionicons name="location-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
@@ -115,3 +139,5 @@ export default function ArticuloList({
     />
   );
 }
+
+export default memo(ArticuloListCmp);

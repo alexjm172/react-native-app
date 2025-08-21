@@ -1,4 +1,3 @@
-// src/data/repositories/AuthRepositoryImpl.ts
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,

@@ -9,18 +9,32 @@ import { homeStyles as styles } from './styles/Home.styles';
 
 import { ArticuloRepositoryImpl } from '../../../data/repositories/ArticuloRepositoryImpl';
 import { GetArticulosByCategoria } from '../../../domain/usecases/GetArticulosByCategoria';
+
+import { useAuth } from '../../../app/providers/AuthProvider';
+import { UserRepositoryImpl } from '../../../data/repositories/UserRepositoryImpl';
+import { ToggleFavoriteUseCase } from '../../../domain/usecases/ToggleFavoritoUseCase';
+
 import { useHomeVM } from '../../viewmodels/HomeViewModel';
 import type { CategoryId } from '../../viewmodels/types/Category';
 
 export default function HomeScreen() {
+  const { user } = useAuth();                   // usuario autenticado
+  const currentUid = user?.id;                
+
+  // DI artículos
   const repo = useMemo(() => new ArticuloRepositoryImpl(), []);
-  const uc = useMemo(() => new GetArticulosByCategoria(repo), [repo]);
+  const uc   = useMemo(() => new GetArticulosByCategoria(repo), [repo]);
+
+  // DI favoritos
+  const userRepo = useMemo(() => new UserRepositoryImpl(), []);
+  const toggleUC = useMemo(() => new ToggleFavoriteUseCase(userRepo), [userRepo]);
 
   const {
     categories, selectedId, onChangeCategoria,
     items, loading, error, reload,
-    fabOpen, toggleFab, closeFab
-  } = useHomeVM(uc);
+    fabOpen, toggleFab, closeFab,
+    favorites, onToggleFavorite,
+  } = useHomeVM(uc, currentUid, toggleUC);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -36,25 +50,16 @@ export default function HomeScreen() {
           loading={loading}
           error={error}
           reload={reload}
-          onPressItem={(a) => {
-            console.log('Artículo', a.id);
-          }}
+          favorites={favorites}
+          onToggleFavorite={onToggleFavorite}
+          onPressItem={(a) => console.log('Artículo', a.id)}
         />
 
-        {/* FAB overlay (por encima de la lista) */}
         <FloatingActions
           open={fabOpen}
           onToggle={toggleFab}
-          onAdd={() => {
-            closeFab();
-            // TODO: navegación / modal para añadir artículo
-            console.log('Añadir artículo');
-          }}
-          onFilter={() => {
-            closeFab();
-            // TODO: abrir filtros
-            console.log('Filtrar artículos');
-          }}
+          onAdd={() => { closeFab(); console.log('Añadir artículo'); }}
+          onFilter={() => { closeFab(); console.log('Filtrar artículos'); }}
         />
       </View>
     </SafeAreaView>
