@@ -2,19 +2,20 @@ import React, { useRef } from 'react';
 import { Animated, Dimensions, View, ActivityIndicator, Text, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { Articulo } from '../../../../domain/entities/Articulo';
 import ArticuloThumb from '../../../components/ArticuloList/components/ArticuloThumb';
 import { articuloListStyles as cardStyles } from '../../../components/ArticuloList/styles/ArticuloList.styles';
 import { favoritosStyles as styles } from './styles/Favoritos.styles';
 import { FavoritosScreenViewModel } from '../../../viewmodels/FavoritosScreenViewModel';
+import type { ProfileStackParamList } from '../../../../app/navigation/stacks/ProfileStack';
 
 export default function FavoritosScreen() {
-  // VM: datos + lógica de favoritos
   const { items, favorites, loading, error, reload, onToggleFavorite, removeLocal } =
     FavoritosScreenViewModel();
 
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
 
   // Animación por fila
   const width = Dimensions.get('window').width;
@@ -36,14 +37,18 @@ export default function FavoritosScreen() {
   };
 
   const goToMap = (a: Articulo) => {
-  const lat = (a as any).latitud ?? (a as any).lat;
-  const lng = (a as any).longitud ?? (a as any).lng;
-  if (typeof lat !== 'number' || typeof lng !== 'number') return;
+    const lat = (a as any).latitud ?? (a as any).lat;
+    const lng = (a as any).longitud ?? (a as any).lng;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
 
-  navigation.navigate('Mapa', {
-    focus: { id: a.id, latitude: lat, longitude: lng },
-  });
-};
+    navigation.navigate('Mapa', {
+      focus: { id: a.id, latitude: lat, longitude: lng },
+    });
+  };
+
+  const goToDetail = (a: Articulo) => {
+    navigation.navigate('ArticuloDetail', { articulo: a });
+  };
 
   if (loading && items.length === 0) {
     return (
@@ -79,7 +84,12 @@ export default function FavoritosScreen() {
 
           return (
             <Animated.View style={{ transform: [{ translateX }] }}>
-              <View style={cardStyles.row}>
+              {/* Toca la tarjeta para ir al detalle */}
+              <TouchableOpacity
+                style={cardStyles.row}
+                activeOpacity={0.9}
+                onPress={() => goToDetail(item)}
+              >
                 {/* Arriba: imagen + textos */}
                 <View style={cardStyles.rowTop}>
                   <ArticuloThumb articulo={item} size={64} />
@@ -92,13 +102,14 @@ export default function FavoritosScreen() {
                   </View>
                 </View>
 
-                {/* Acciones (igual que Home, con animación al quitar) */}
+                {/* Acciones (favorito, carrito, mapa) */}
                 <View style={cardStyles.actionsRow}>
                   <TouchableOpacity
                     style={cardStyles.actionBtn}
                     onPress={() => handleToggle(item)}
                     activeOpacity={0.85}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                   >
                     <Ionicons
                       name={isFav ? 'heart' : 'heart-outline'}
@@ -111,6 +122,7 @@ export default function FavoritosScreen() {
                     style={cardStyles.actionBtn}
                     onPress={() => {}}
                     activeOpacity={0.85}
+                    accessibilityLabel="Añadir al carrito"
                   >
                     <Ionicons name="cart-outline" size={20} color="#ffffff" />
                   </TouchableOpacity>
@@ -119,11 +131,12 @@ export default function FavoritosScreen() {
                     style={cardStyles.actionBtn}
                     onPress={() => goToMap(item)}
                     activeOpacity={0.85}
+                    accessibilityLabel="Ver en el mapa"
                   >
                     <Ionicons name="location-outline" size={20} color="#ffffff" />
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             </Animated.View>
           );
         }}
