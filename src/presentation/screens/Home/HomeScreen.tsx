@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 import CategoryPicker from '../../components/CategoryPicker/CategoryPicker';
 import ArticuloList from '../../components/ArticuloList/ArticulosList';
@@ -18,14 +19,12 @@ import { useHomeVM } from '../../viewmodels/HomeViewModel';
 import type { CategoryId } from '../../viewmodels/types/Category';
 
 export default function HomeScreen() {
-  const { user } = useAuth();                   // usuario autenticado
-  const currentUid = user?.id;                
+  const { user } = useAuth();
+  const currentUid = user?.id;
 
-  // DI artículos
   const repo = useMemo(() => new ArticuloRepositoryImpl(), []);
   const uc   = useMemo(() => new GetArticulosByCategoria(repo), [repo]);
 
-  // DI favoritos
   const userRepo = useMemo(() => new UserRepositoryImpl(), []);
   const toggleUC = useMemo(() => new ToggleFavoriteUseCase(userRepo), [userRepo]);
 
@@ -34,7 +33,16 @@ export default function HomeScreen() {
     items, loading, error, reload,
     fabOpen, toggleFab, closeFab,
     favorites, onToggleFavorite,
+    refreshFavorites,                
   } = useHomeVM(uc, currentUid, toggleUC);
+
+  // cada vez que Home gana foco
+  // refrescamos el set de favoritos desde Firestore.
+  useFocusEffect(
+    useCallback(() => {
+      refreshFavorites();
+    }, [refreshFavorites])
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>

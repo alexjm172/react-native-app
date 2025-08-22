@@ -1,6 +1,4 @@
 import { Articulo } from "../entities/Articulo";
-
-
 export type GeoQuery = {
   latitude: number;
   longitude: number;
@@ -14,4 +12,5 @@ export interface ArticuloRepository {
   upsert(articulo: Articulo): Promise<void>;
   delete(categoria: string, id: string): Promise<void>;
   getByGeo(q: GeoQuery): Promise<Articulo[]>;
+  getByIds(ids: string[]): Promise<Articulo[]>;
 }
