@@ -4,15 +4,14 @@ import CarritoScreen from '../../../presentation/screens/Carrito/CarritoScreen';
 
 export type CarritoStackParamList = {
   Carrito: undefined;
-  // Ej.: Checkout: undefined
 };
 
 const Stack = createNativeStackNavigator<CarritoStackParamList>();
 
 export default function CarritoStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Carrito" component={CarritoScreen} options={{ title: 'Carrito' }} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Carrito" component={CarritoScreen}  />
     </Stack.Navigator>
   );
 }
