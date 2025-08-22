@@ -1,7 +1,6 @@
-import React, { useLayoutEffect, useMemo, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, ScrollView, TouchableOpacity, Alert,
-  Modal, Platform
+  View, Text, TextInput, ScrollView, TouchableOpacity, Alert, Modal,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
@@ -47,7 +46,10 @@ export default function ArticuloEditScreen() {
   // DI
   const articuloRepo = useMemo(() => new ArticuloRepositoryImpl(), []);
   const storageRepo  = useMemo(() => new StorageRepositoryImpl(), []);
-  const updateUC     = useMemo(() => new UpdateArticuloWithImagesUseCase(articuloRepo, storageRepo), [articuloRepo, storageRepo]);
+  const updateUC     = useMemo(
+    () => new UpdateArticuloWithImagesUseCase(articuloRepo, storageRepo),
+    [articuloRepo, storageRepo]
+  );
 
   const vm = useArticuloEditVM(base, updateUC);
 
@@ -55,7 +57,7 @@ export default function ArticuloEditScreen() {
   const [showCat, setShowCat] = useState(false);
   const [showEst, setShowEst] = useState(false);
 
-  // botón guardar en header
+  // Header: botón Guardar
   useLayoutEffect(() => {
     nav.setOptions({
       title: 'Editar artículo',
@@ -65,6 +67,7 @@ export default function ArticuloEditScreen() {
           onPress={async () => {
             try {
               const saved = await vm.save();
+              // Reemplaza el detalle con el artículo actualizado y mantiene la edición disponible
               nav.replace('ArticuloDetail', { articulo: saved, canEdit: true });
             } catch (e: any) {
               Alert.alert('Revisa el formulario', e?.message ?? 'No se pudo guardar');
@@ -83,15 +86,34 @@ export default function ArticuloEditScreen() {
     return <View style={styles.center}><Text>Artículo no disponible</Text></View>;
   }
 
+  // ====== Imagenes
   const pickImages = async () => {
     const res = await launchImageLibrary({
       mediaType: 'photo',
       selectionLimit: 10,
-      includeBase64: false
+      includeBase64: false,
     });
     if (res.didCancel || !res.assets?.length) return;
     const uris = res.assets.map((a: Asset) => a.uri!).filter(Boolean) as string[];
     vm.addNewLocal(uris);
+  };
+
+  // ====== Mapa (callback)
+  const handleLocationPicked = useCallback(
+    ({ latitude, longitude }: { latitude: number; longitude: number }) => {
+      vm.setLatitud(String(latitude));
+      vm.setLongitud(String(longitude));
+    },
+    [vm]
+  );
+
+  const openMapPicker = () => {
+    const lat = vm.latitud ? Number(vm.latitud) : base.latitud;
+    const lng = vm.longitud ? Number(vm.longitud) : base.longitud;
+    nav.navigate('PickLocation', {
+      initial: { latitude: lat, longitude: lng },
+      onConfirm: handleLocationPicked, // callback
+    });
   };
 
   return (
@@ -113,25 +135,20 @@ export default function ArticuloEditScreen() {
         ) : (
           vm.uiImages.map((img) => (
             <View key={img.uri} style={[styles.imageBox, img.removed && styles.imageRemoved]}>
-              <View style={styles.image} >
-                {/* Imagen */}
-                {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
+              <View style={styles.image}>
                 <ImageShim uri={img.uri} />
               </View>
 
-              {/* Botón eliminar/restaurar */}
+              {/* Eliminar/restaurar */}
               <TouchableOpacity
                 style={styles.imageAction}
                 onPress={() => {
                   if (img.remote) vm.toggleRemoveExisting(img.uri);
                   else vm.removeNewLocal(img.uri);
                 }}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
-                <Ionicons
-                  name={img.removed ? 'arrow-undo' : 'trash'}
-                  size={16}
-                  color="#fff"
-                />
+                <Ionicons name={img.removed ? 'arrow-undo' : 'trash'} size={16} color="#fff" />
               </TouchableOpacity>
             </View>
           ))
@@ -206,28 +223,13 @@ export default function ArticuloEditScreen() {
       />
       {vm.errors.precios && <Text style={styles.error}>{vm.errors.precios}</Text>}
 
-      {/* ===== Ubicación */}
-      <Label>Latitud</Label>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={vm.latitud}
-        onChangeText={vm.setLatitud}
-        placeholder="40.4168"
-      />
-      {vm.errors.latitud && <Text style={styles.error}>{vm.errors.latitud}</Text>}
+    
+      <View style={{ height: 8 }} />
 
-      <Label>Longitud</Label>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={vm.longitud}
-        onChangeText={vm.setLongitud}
-        placeholder="-3.7038"
-      />
-      {vm.errors.longitud && <Text style={styles.error}>{vm.errors.longitud}</Text>}
-
-      <View style={{ height: 28 }} />
+      <TouchableOpacity onPress={openMapPicker} style={styles.addBtn} activeOpacity={0.9}>
+        <Ionicons name="map-outline" size={16} color="#fff" />
+        <Text style={styles.addBtnText}>Cambiar en mapa Ubicacion</Text>
+      </TouchableOpacity>
 
       {/* ===== Modals de pickers compactos */}
       <Modal visible={showCat} transparent animationType="fade" onRequestClose={() => setShowCat(false)}>
@@ -269,10 +271,7 @@ export default function ArticuloEditScreen() {
   );
 }
 
-/**
- * Componente mínimo para mostrar imágenes desde uri remota/local sin romper render
- * (evita importar Image si hay conflictos de lint; usa RN Image normal si lo prefieres)
- */
+/** Pequeño shim para mostrar imágenes por uri */
 import { Image } from 'react-native';
 const ImageShim: React.FC<{ uri: string }> = ({ uri }) => (
   <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: 12 }} resizeMode="cover" />

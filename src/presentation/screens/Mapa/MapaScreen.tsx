@@ -63,7 +63,7 @@ export default function MapaScreen() {
 
           return (
             <Marker
-              key={it.id}
+              key={`${it.categoria}-${it.id}`}
               ref={(ref) => { markerRefs.current[it.id] = ref; }}
               coordinate={{ latitude: lat, longitude: lng }}
               anchor={{ x: 0.5, y: 1 }}

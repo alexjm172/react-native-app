@@ -6,7 +6,8 @@ import ObtenidosScreen from '../../../presentation/screens/Profile/destinations/
 import FavoritosScreen from '../../../presentation/screens/Profile/destinations/FavoritosScreen';
 import MapaScreen from '../../../presentation/screens/Mapa/MapaScreen';
 import ArticuloDetailScreen from '../../../presentation/screens/ArticuloDetails/ArticuloDetailScreen';
-import ArticuloEditScreen from '../../../presentation/screens/ArticuloEdit/ArticuloEditScreen'; 
+import ArticuloEditScreen from '../../../presentation/screens/ArticuloEdit/ArticuloEditScreen';
+import PickLocationScreen from '../../../presentation/screens/Mapa/PickerLocationScreen';
 import type { Articulo } from '../../../domain/entities/Articulo';
 
 export type ProfileStackParamList = {
@@ -15,7 +16,8 @@ export type ProfileStackParamList = {
   Obtenidos: undefined;
   Favoritos: undefined;
   ArticuloDetail: { articulo: Articulo; canEdit?: boolean };
-  ArticuloEdit: { articulo: Articulo };              
+  ArticuloEdit: { articulo: Articulo; pickedLocation?: { latitude: number; longitude: number } };
+  PickLocation: { initial?: { latitude: number; longitude: number } };
   Mapa: { focus?: { id: string; latitude: number; longitude: number } } | undefined;
 };
 
@@ -29,7 +31,8 @@ export default function ProfileStack() {
       <Stack.Screen name="Obtenidos" component={ObtenidosScreen} options={{ title: 'Productos obtenidos' }} />
       <Stack.Screen name="Favoritos" component={FavoritosScreen} options={{ title: 'Tus favoritos' }} />
       <Stack.Screen name="ArticuloDetail" component={ArticuloDetailScreen} options={{ title: 'Detalle' }} />
-      <Stack.Screen name="ArticuloEdit" component={ArticuloEditScreen} options={{ title: 'Editar artículo' }} />
+      <Stack.Screen name="ArticuloEdit" component={ArticuloEditScreen} />
+      <Stack.Screen name="PickLocation" component={PickLocationScreen} options={{ title: 'Selecciona ubicación' }} />
       <Stack.Screen name="Mapa" component={MapaScreen} options={{ title: 'Mapa' }} />
     </Stack.Navigator>
   );
