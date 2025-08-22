@@ -6,6 +6,7 @@ import ObtenidosScreen from '../../../presentation/screens/Profile/destinations/
 import FavoritosScreen from '../../../presentation/screens/Profile/destinations/FavoritosScreen';
 import MapaScreen from '../../../presentation/screens/Mapa/MapaScreen';
 import ArticuloDetailScreen from '../../../presentation/screens/ArticuloDetails/ArticuloDetailScreen';
+import ArticuloEditScreen from '../../../presentation/screens/ArticuloEdit/ArticuloEditScreen'; 
 import type { Articulo } from '../../../domain/entities/Articulo';
 
 export type ProfileStackParamList = {
@@ -13,7 +14,8 @@ export type ProfileStackParamList = {
   MisProductos: undefined;
   Obtenidos: undefined;
   Favoritos: undefined;
-  ArticuloDetail: { articulo: Articulo };
+  ArticuloDetail: { articulo: Articulo; canEdit?: boolean };
+  ArticuloEdit: { articulo: Articulo };              
   Mapa: { focus?: { id: string; latitude: number; longitude: number } } | undefined;
 };
 
@@ -22,12 +24,12 @@ const Stack = createNativeStackNavigator<ProfileStackParamList>();
 export default function ProfileStack() {
   return (
     <Stack.Navigator>
-      {/* En Profile no quieres header */}
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
       <Stack.Screen name="MisProductos" component={MisProductosScreen} options={{ title: 'Tus productos' }} />
       <Stack.Screen name="Obtenidos" component={ObtenidosScreen} options={{ title: 'Productos obtenidos' }} />
       <Stack.Screen name="Favoritos" component={FavoritosScreen} options={{ title: 'Tus favoritos' }} />
       <Stack.Screen name="ArticuloDetail" component={ArticuloDetailScreen} options={{ title: 'Detalle' }} />
+      <Stack.Screen name="ArticuloEdit" component={ArticuloEditScreen} options={{ title: 'Editar artículo' }} />
       <Stack.Screen name="Mapa" component={MapaScreen} options={{ title: 'Mapa' }} />
     </Stack.Navigator>
   );

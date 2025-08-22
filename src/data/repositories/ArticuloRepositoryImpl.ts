@@ -1,8 +1,10 @@
 import {
   getDocs, getDoc, setDoc, deleteDoc,
   query, orderBy, startAt, endAt, limit as fsLimit,
+  updateDoc,
 } from 'firebase/firestore';
 import { distanceBetween } from 'geofire-common';
+
 import { itemsCollectionRef, itemDocRef, itemsCollectionGroupRef } from '../datasources/remote/firebasePaths';
 import { articuloFromSnapshot, articuloToDoc } from '../mappers/articulo.mapper';
 import type { Articulo } from '../../domain/entities/Articulo';
@@ -22,12 +24,19 @@ export class ArticuloRepositoryImpl implements ArticuloRepository {
     return snap.exists() ? articuloFromSnapshot(snap) : null;
   }
 
-  async upsert(articulo: Articulo): Promise<void> {
-    await setDoc(
-      itemDocRef(articulo.categoria as string, articulo.id),
-      { ...articuloToDoc(articulo), id: articulo.id }, // guardamos también `id`
-      { merge: true }
-    );
+  /** ← ampliado para admitir imágenes/paths */
+  async upsert(
+    articulo: Articulo,
+    extra?: { imagenes?: string[]; imagenesPaths?: string[] }
+  ): Promise<void> {
+    const payload: any = {
+      ...articuloToDoc(articulo),
+      id: articulo.id,
+    };
+    if (extra?.imagenes)      payload.imagenes = extra.imagenes;
+    if (extra?.imagenesPaths) payload.imagenesPaths = extra.imagenesPaths;
+
+    await setDoc(itemDocRef(articulo.categoria as any, articulo.id), payload, { merge: true });
   }
 
   async delete(categoria: string, id: string): Promise<void> {
@@ -61,7 +70,7 @@ export class ArticuloRepositoryImpl implements ArticuloRepository {
     return typeof limit === 'number' && limit > 0 ? out.slice(0, limit) : out;
   }
 
-  // Favoritos: buscamos cada id en TODAS las categorías 
+  /** Favoritos / listados por ids (buscando en todas las categorías) */
   async getByIds(ids: string[]): Promise<Articulo[]> {
     if (!ids.length) return [];
     const out: Articulo[] = [];
@@ -75,5 +84,29 @@ export class ArticuloRepositoryImpl implements ArticuloRepository {
       if (found) out.push(found);
     }
     return out;
+  }
+
+  async getImagePaths(categoria: string, id: string): Promise<string[]> {
+    const snap = await getDoc(itemDocRef(categoria, id));
+    if (!snap.exists()) return [];
+    const data: any = snap.data();
+    return Array.isArray(data?.imagenesPaths) ? data.imagenesPaths : [];
+  }
+
+  async setImagePaths(categoria: string, id: string, paths: string[]) {
+    await updateDoc(itemDocRef(categoria, id), { imagenesPaths: paths });
+  }
+
+  async updateImagesMeta(
+    categoria: string,
+    id: string,
+    imagenes: string[],
+    imagenesPaths: string[],
+  ): Promise<void> {
+    await setDoc(
+      itemDocRef(categoria, id),
+      { imagenes, imagenesPaths },
+      { merge: true }
+    );
   }
 }

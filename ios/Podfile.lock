@@ -1242,6 +1242,27 @@ PODS:
     - React
   - react-native-get-random-values (1.11.0):
     - React-Core
+  - react-native-image-picker (8.2.1):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - react-native-maps (1.25.3):
     - react-native-maps/Maps (= 1.25.3)
   - react-native-maps/Generated (1.25.3):
@@ -1704,7 +1725,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNScreens (4.14.1):
+  - RNScreens (4.13.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1725,9 +1746,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNScreens/common (= 4.14.1)
+    - RNScreens/common (= 4.13.1)
     - Yoga
-  - RNScreens/common (4.14.1):
+  - RNScreens/common (4.13.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1794,6 +1815,7 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-geolocation-service (from `../node_modules/react-native-geolocation-service`)
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
+  - react-native-image-picker (from `../node_modules/react-native-image-picker`)
   - react-native-maps (from `../node_modules/react-native-maps`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-vector-icons-ionicons (from `../node_modules/@react-native-vector-icons/ionicons`)"
@@ -1915,6 +1937,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-geolocation-service"
   react-native-get-random-values:
     :path: "../node_modules/react-native-get-random-values"
+  react-native-image-picker:
+    :path: "../node_modules/react-native-image-picker"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
   react-native-safe-area-context:
@@ -2028,6 +2052,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: b902bf1dc40aa577bb8e00e2ec897853fbc82ca4
   react-native-geolocation-service: 32b2c2a3b91e70ce2a8d0c684801aaeb0a07e0ec
   react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
+  react-native-image-picker: 84b261e109faa7312bca59f1f65c8f2b22865496
   react-native-maps: 9c8eafe4fc04c441c4bb45f2491dcdd680cc5950
   react-native-safe-area-context: b9cdd3b88b15a309a006ddcd9f715bc7008f6747
   react-native-vector-icons-ionicons: ad07e944a092a5cf71b8b569d8f5ce2bf674c415
@@ -2062,7 +2087,7 @@ SPEC CHECKSUMS:
   RNCAsyncStorage: dc5ca6aeca46e73f963ea4f79e222838c2d186cb
   RNCPicker: 490a52d042dc1db36dc979947fced02fd1cf476e
   RNPermissions: 9b35082ac2b97dfeafec6fd3646824d48f3cf52f
-  RNScreens: bff85b0a7454915c139583c7bd249874295c99a8
+  RNScreens: ef16970d0f91f1750ca82ba0db5d521fc0055fba
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: eca8dd841b7cd47d82d66be58af8e3aeb819012f
 

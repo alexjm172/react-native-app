@@ -6,6 +6,8 @@ import { GetArticulosByIds } from '../../../../domain/usecases/GetArticulosByIds
 import { useMisProductosVM } from '../../../viewmodels/MisProductosViewModel';
 import ArticuloListSimple from '../../../components/ArticuloList/ArticuloListSimple';
 import { misProductosStyles as styles } from './styles/MisProductos.styles';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 export default function MisProductosScreen() {
   const { user } = useAuth();
@@ -16,6 +18,8 @@ export default function MisProductosScreen() {
 
   const { items, loading, error, reload } = useMisProductosVM(getByIds, ids);
 
+  useFocusEffect(useCallback(() => { reload(); }, [reload]));
+
   return (
     <SafeAreaView style={styles.container}>
       <ArticuloListSimple
@@ -25,6 +29,7 @@ export default function MisProductosScreen() {
         reload={reload}
         extraContentStyle={styles.listContent}
         rowWrapperStyle={styles.rowWrap}
+        canEdit
       />
     </SafeAreaView>
   );

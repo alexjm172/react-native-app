@@ -1,12 +1,22 @@
-import React from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity, Modal, ScrollView, Dimensions } from 'react-native';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import React, { useLayoutEffect } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
+
 import type { Articulo } from '../../../domain/entities/Articulo';
 import { detailStyles as styles } from './styles/ArticuloDetail.style';
 import { ArticuloDetailViewModel } from '../../viewmodels/ArticuloDetailViewModel';
 
-type Params = { articulo: Articulo };
+type Params = { articulo: Articulo; canEdit?: boolean };
 type DetailRoute = RouteProp<Record<'ArticuloDetail', Params>, 'ArticuloDetail'>;
 
 const { width } = Dimensions.get('window');
@@ -29,7 +39,25 @@ const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value
 export default function ArticuloDetailScreen() {
   const { params } = useRoute<DetailRoute>();
   const articulo = params?.articulo;
+  const canEdit = !!params?.canEdit;
+
   const nav = useNavigation<any>();
+
+  // Header: icono de editar (sólo si canEdit === true)
+  useLayoutEffect(() => {
+    nav.setOptions({
+      headerRight: canEdit
+        ? () => (
+            <TouchableOpacity
+              onPress={() => nav.replace('ArticuloEdit', { articulo })}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="pencil" size={20} />
+            </TouchableOpacity>
+          )
+        : undefined,
+    });
+  }, [nav, canEdit, articulo]);
 
   const {
     images, hasImages,
@@ -39,7 +67,7 @@ export default function ArticuloDetailScreen() {
     precios, // {hora?, dia?, semana?}
     hasLocation,
     isIOS,
-  } = ArticuloDetailViewModel(articulo);
+  } = ArticuloDetailViewModel(articulo!);
 
   if (!articulo) {
     return (
@@ -51,10 +79,9 @@ export default function ArticuloDetailScreen() {
 
   const goToMap = () => {
     if (!hasLocation) return;
-    const params = {
+    nav.navigate('Mapa', {
       focus: { id: articulo.id, latitude: articulo.latitud, longitude: articulo.longitud },
-    };
-    nav.navigate('Mapa', params);
+    });
   };
 
   return (
@@ -106,8 +133,8 @@ export default function ArticuloDetailScreen() {
 
         {/* Precios */}
         <View style={styles.chipsRow}>
-          {precios.hora != null && <Chip>{precios.hora}€/h</Chip>}
-          {precios.dia  != null && <Chip>{precios.dia}€/día</Chip>}
+          {precios.hora   != null && <Chip>{precios.hora}€/h</Chip>}
+          {precios.dia    != null && <Chip>{precios.dia}€/día</Chip>}
           {precios.semana != null && <Chip>{precios.semana}€/sem</Chip>}
         </View>
 
@@ -131,36 +158,16 @@ export default function ArticuloDetailScreen() {
           </View>
         )}
 
-        {/* Descripción (si existiera en tus docs) */}
+        {/* Descripción opcional si existe */}
         {(articulo as any).descripcion && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Descripción</Text>
             <Text style={styles.descText}>{(articulo as any).descripcion}</Text>
           </View>
         )}
-
-        {/* Alquileres (resumen)
-        {Array.isArray(articulo.alquileres) && articulo.alquileres.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Alquileres</Text>
-            <Text style={styles.noteText}>Total: {articulo.alquileres.length}</Text>
-            {/* Render liviano de cada alquiler (sin conocer el shape exacto) }
-            {articulo.alquileres.slice(0, 3).map((alq: any, i: number) => (
-              <View key={i} style={styles.alqRow}>
-                <Text style={styles.alqMono} numberOfLines={1}>
-                  {JSON.stringify(alq)}
-                </Text>
-              </View>
-            ))}
-            {articulo.alquileres.length > 3 && (
-              <Text style={styles.noteText}>… y {articulo.alquileres.length - 3} más</Text>
-            )}
-          </View>
-        )}  
-        */}
       </View>
 
-      {/* Fullscreen viewer */}
+      {/* Visor fullscreen */}
       <Modal visible={fullVisible} transparent animationType="fade" onRequestClose={closeFull}>
         <View style={styles.modalBg}>
           <FlatList

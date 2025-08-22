@@ -10,6 +10,7 @@ import { homeStyles as styles } from './styles/Home.styles';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../../app/navigation/stacks/HomeStack';
+import { DeviceEventEmitter, type EmitterSubscription } from 'react-native';
 
 import { ArticuloRepositoryImpl } from '../../../data/repositories/ArticuloRepositoryImpl';
 import { GetArticulosByCategoria } from '../../../domain/usecases/GetArticulosByCategoria';
@@ -42,10 +43,25 @@ export default function HomeScreen() {
   // cada vez que Home gana foco
   // refrescamos el set de favoritos desde Firestore.
   useFocusEffect(
-    useCallback(() => {
-      refreshFavorites();
-    }, [refreshFavorites])
-  );
+  useCallback(() => {
+    // 1) refresca al ganar foco
+    refreshFavorites();
+    reload();
+
+    // 2) escucha actualizaciones de artículos (editar/cambiar categoría, etc.)
+    const sub: EmitterSubscription = DeviceEventEmitter.addListener(
+      'articulo:updated',
+      () => {
+        // recarga datos visibles y favoritos
+        reload();
+        refreshFavorites();
+      }
+    );
+
+    // 3) limpia el listener al perder foco
+    return () => sub.remove();
+  }, [reload, refreshFavorites])
+);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>

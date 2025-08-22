@@ -7,7 +7,7 @@ import type { Articulo } from '../../../domain/entities/Articulo';
 
 export type HomeStackParamList = {
   Home: undefined;
-  ArticuloDetail: { articulo: Articulo };
+  ArticuloDetail: { articulo: Articulo; canEdit?: boolean };
   Mapa: { focus?: { id: string; latitude: number; longitude: number } } | undefined;
 };
 

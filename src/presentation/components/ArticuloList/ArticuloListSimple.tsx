@@ -10,35 +10,27 @@ type Props = {
   loading: boolean;
   error: string | null;
   reload: () => void;
-  /** 👇 estilos externos opcionales */
   extraContentStyle?: StyleProp<ViewStyle>;
   rowWrapperStyle?: StyleProp<ViewStyle>;
+  canEdit?: boolean;
 };
 
 function ArticuloListSimpleCmp({
   items, loading, error, reload,
   extraContentStyle, rowWrapperStyle,
+  canEdit = false,
 }: Props) {
   const nav = useNavigation<any>();
 
   const goToDetail = (a: Articulo) => {
-    nav.navigate('ArticuloDetail' as never, { articulo: a } as never);
+    nav.navigate('ArticuloDetail' as never, { articulo: a, canEdit } as never);
   };
 
   if (loading && items.length === 0) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
+    return <View style={styles.center}><ActivityIndicator /></View>;
   }
-
   if (error) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.error}>{error}</Text>
-      </View>
-    );
+    return <View style={styles.center}><Text style={styles.error}>{error}</Text></View>;
   }
 
   return (
@@ -64,11 +56,7 @@ function ArticuloListSimpleCmp({
           </TouchableOpacity>
         </View>
       )}
-      ListEmptyComponent={
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>Aún no has publicado artículos</Text>
-        </View>
-      }
+      ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>Aún no has publicado artículos</Text></View>}
     />
   );
 }

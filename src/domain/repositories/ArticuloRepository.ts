@@ -13,4 +13,12 @@ export interface ArticuloRepository {
   delete(categoria: string, id: string): Promise<void>;
   getByGeo(q: GeoQuery): Promise<Articulo[]>;
   getByIds(ids: string[]): Promise<Articulo[]>;
+  getImagePaths(categoria: string, id: string): Promise<string[]>;
+  setImagePaths(categoria: string, id: string, paths: string[]): Promise<void>;
+  updateImagesMeta(
+    categoria: string,
+    id: string,
+    imagenes: string[],       
+    imagenesPaths: string[],  
+  ): Promise<void>;
 }
