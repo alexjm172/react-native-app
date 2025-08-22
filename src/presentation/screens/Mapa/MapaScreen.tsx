@@ -8,7 +8,7 @@ import { GetArticulosByGeoUseCase } from '../../../domain/usecases/GetArticuloBy
 import type { HomeStackParamList } from '../../../app/navigation/stacks/HomeStack';
 import { mapStyles as styles } from './styles/Map.styles';
 
-type RouteProps = RouteProp<HomeStackParamList, 'MapaFromHome'>;
+type RouteProps = RouteProp<HomeStackParamList, 'Mapa'>;
 
 const toRegion = (lat: number, lng: number): RNRegion => ({
   latitude: lat,

@@ -7,6 +7,9 @@ import CategoryPicker from '../../components/CategoryPicker/CategoryPicker';
 import ArticuloList from '../../components/ArticuloList/ArticulosList';
 import FloatingActions from '../../components/FloatingActions/FloatingActions';
 import { homeStyles as styles } from './styles/Home.styles';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { HomeStackParamList } from '../../../app/navigation/stacks/HomeStack';
 
 import { ArticuloRepositoryImpl } from '../../../data/repositories/ArticuloRepositoryImpl';
 import { GetArticulosByCategoria } from '../../../domain/usecases/GetArticulosByCategoria';
@@ -27,7 +30,7 @@ export default function HomeScreen() {
 
   const userRepo = useMemo(() => new UserRepositoryImpl(), []);
   const toggleUC = useMemo(() => new ToggleFavoriteUseCase(userRepo), [userRepo]);
-
+  const navigation  = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const {
     categories, selectedId, onChangeCategoria,
     items, loading, error, reload,
@@ -60,7 +63,7 @@ export default function HomeScreen() {
           reload={reload}
           favorites={favorites}
           onToggleFavorite={onToggleFavorite}
-          onPressItem={(a) => console.log('Artículo', a.id)}
+          onPressItem= {(a) => navigation.navigate('ArticuloDetail', { articulo: a })}
         />
 
         <FloatingActions

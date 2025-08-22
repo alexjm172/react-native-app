@@ -40,7 +40,7 @@ export default function FavoritosScreen() {
   const lng = (a as any).longitud ?? (a as any).lng;
   if (typeof lat !== 'number' || typeof lng !== 'number') return;
 
-  navigation.navigate('MapaFromProfile', {
+  navigation.navigate('Mapa', {
     focus: { id: a.id, latitude: lat, longitude: lng },
   });
 };

@@ -34,7 +34,7 @@ function ArticuloListCmp({
     const lat = (a as any).latitud ?? (a as any).lat;
     const lng = (a as any).longitud ?? (a as any).lng;
     if (typeof lat === 'number' && typeof lng === 'number') {
-      navigation.navigate('MapaFromHome', {
+      navigation.navigate('Mapa', {
         focus: { id: a.id, latitude: lat, longitude: lng },
       });
     }
