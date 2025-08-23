@@ -8,6 +8,7 @@ import type { Articulo } from '../../../domain/entities/Articulo';
 import { articuloListStyles as styles } from './styles/ArticuloList.styles';
 import ArticuloThumb from './components/ArticuloThumb';
 import type { HomeStackParamList } from '../../../app/navigation/stacks/HomeStack';
+import { useCart } from '../../../app/providers/CartProvider';
 
 type Props = {
   items: Articulo[];
@@ -27,8 +28,8 @@ function ArticuloListCmp({
   onPressFavorite, onPressAddToCart, onPressShowOnMap,
   favorites, onToggleFavorite,
 }: Props) {
-
   const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+  const { has, toggle } = useCart(); // 👈 tu carrito global (array)
 
   const goToMap = (a: Articulo) => {
     const lat = (a as any).latitud ?? (a as any).lat;
@@ -64,11 +65,17 @@ function ArticuloListCmp({
       onRefresh={reload}
       refreshing={loading}
       renderItem={({ item }) => {
-        const isFav = favorites?.has(item.id) ?? false;
+        const isFav  = favorites?.has(item.id) ?? false;
+        const inCart = has(item.id);                // ✅ correcto con tu provider
 
         const lat = (item as any).latitud ?? (item as any).lat;
         const lng = (item as any).longitud ?? (item as any).lng;
         const canShowOnMap = typeof lat === 'number' && typeof lng === 'number';
+
+        const handleCart = () => {
+          if (onPressAddToCart) return onPressAddToCart(item); // override externo
+          toggle(item.id);                                     // ✅ toggle global
+        };
 
         return (
           <TouchableOpacity
@@ -76,7 +83,7 @@ function ArticuloListCmp({
             activeOpacity={0.9}
             onPress={() => onPressItem?.(item)}
           >
-            {/* Arriba: imagen izquierda + textos derecha */}
+            {/* Arriba: imagen + textos */}
             <View style={styles.rowTop}>
               <ArticuloThumb articulo={item} size={64} />
               <View style={styles.rowBody}>
@@ -88,7 +95,7 @@ function ArticuloListCmp({
               </View>
             </View>
 
-            {/* Debajo: botones centrados */}
+            {/* Acciones */}
             <View style={styles.actionsRow}>
               <TouchableOpacity
                 style={styles.actionBtn}
@@ -107,11 +114,16 @@ function ArticuloListCmp({
 
               <TouchableOpacity
                 style={styles.actionBtn}
-                onPress={() => onPressAddToCart?.(item)}
+                onPress={handleCart}
                 activeOpacity={0.85}
-                accessibilityLabel="Añadir al carrito"
+                accessibilityLabel={inCart ? 'Quitar del carrito' : 'Añadir al carrito'}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="cart-outline" size={20} color="#ffffff" />
+                <Ionicons
+                  name={inCart ? 'cart' : 'cart-outline'}
+                  size={20}
+                  color={inCart ? '#10B981' : '#ffffff'}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity
