@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { COLORS } from '../../../../theme/colors';
+import { COLORS } from '../../../../app/theme/colors';
 
 export const carritoStyles = StyleSheet.create({
   container: {
@@ -16,22 +16,35 @@ export const carritoStyles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 12,
     backgroundColor: '#fff',
-    overflow: 'hidden',
-    paddingBottom: 10,
+    padding: 10,
   },
   estimate: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
+    marginTop: 10,
   },
   estimateTitle: {
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   estimateText: {
     color: '#0f172a',
   },
   estimateStrong: {
     fontWeight: '800',
+  },
+  rentBtn: {
+    marginTop: 12,
+    backgroundColor: COLORS.pantone,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    gap: 8,
+  },
+  rentBtnText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });

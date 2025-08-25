@@ -1,48 +1,90 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { COLORS } from '../../../../app/theme/colors';
 
-export const floatingStyles = StyleSheet.create({
-  wrap: {
+const SIZE = 56;
+
+export const styles = StyleSheet.create({
+  container: {
     position: 'absolute',
-    zIndex: 100,          // iOS por encima de la lista
-    elevation: 8,         // Android por encima
-    flexDirection: 'row',
-    alignItems: 'center',
+    bottom: Platform.select({ ios: 28, android: 24 }),
+    right: 16,
+    alignItems: 'flex-end',
   },
 
-  // fila hacia la izquierda del botón principal
-  secondaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 10, // separación respecto al principal
+  childrenCol: {
+    alignItems: 'flex-end',
+    marginBottom: 12,
     gap: 10,
   },
 
-  mainBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  miniFab: {
     backgroundColor: COLORS.pantone,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    borderRadius: 28,
+    padding: 14,
   },
 
-  secondaryBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  mainFab: {
     backgroundColor: COLORS.pantone,
+    borderRadius: SIZE / 2,
+    padding: 18,
+    width: SIZE,
+    height: SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+  },
+
+  // Sombras
+  shadowSmall: Platform.select({
+    ios: {
+      shadowColor: '#000',
+      shadowOpacity: 0.18,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    android: {
+      elevation: 6,
+    },
+  }) as object,
+
+  shadowStrong: Platform.select({
+    ios: {
+      shadowColor: '#000',
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 4 },
+    },
+    android: {
+      elevation: 8,
+    },
+  }) as object,
+
+  // Badge
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

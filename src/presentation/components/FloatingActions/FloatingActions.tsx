@@ -1,61 +1,72 @@
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { floatingStyles as styles } from './styles/FloatingActions.styles';
+import { styles } from './styles/FloatingActions.styles';
 
 type Props = {
   open: boolean;
   onToggle: () => void;
-  onAdd: () => void;
-  onFilter: () => void;
+  onAdd?: () => void;
+  onFilter?: () => void;
+  filtersCount?: number;      // nº de filtros activos
+  showFilterAction?: boolean; // mostrar botón de filtro en el menú
 };
 
-export default function FloatingActions({ open, onToggle, onAdd, onFilter }: Props) {
-  const insets = useSafeAreaInsets();
+export default function FloatingActions({
+  open,
+  onToggle,
+  onAdd,
+  onFilter,
+  filtersCount = 0,
+  showFilterAction = true,
+}: Props) {
+  const hasFilters = filtersCount > 0;
+
+  const Badge = ({ value }: { value: number }) => (
+    <View style={styles.badge}>
+      <Text style={styles.badgeText}>{value}</Text>
+    </View>
+  );
 
   return (
-    <View
-      pointerEvents="box-none"
-      style={[
-        styles.wrap,
-        {
-          bottom: insets.bottom + 16, // respeta el home indicator
-          right: 16,
-        },
-      ]}
-    >
-      {/* Botones secundarios (solo si open === true) */}
+    <View pointerEvents="box-none" style={styles.container}>
       {open && (
-        <View style={styles.secondaryRow}>
+        <View style={styles.childrenCol} pointerEvents="box-none">
+          {onAdd && (
+            <TouchableOpacity
+              onPress={onAdd}
+              style={[styles.miniFab, styles.shadowSmall]}
+              activeOpacity={0.9}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            activeOpacity={0.9}
-            onPress={onAdd}
-          >
-            <Ionicons name="add" size={22} color="#ffffff" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            activeOpacity={0.9}
-            onPress={onFilter}
-          >
-            <Ionicons name="funnel-outline" size={20} color="#ffffff" />
-          </TouchableOpacity>
-
+          {showFilterAction && onFilter && (
+            <View style={{ position: 'relative' }}>
+              <TouchableOpacity
+                onPress={onFilter}
+                style={[styles.miniFab, styles.shadowSmall]}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="funnel-outline" size={20} color="#fff" />
+              </TouchableOpacity>
+              {hasFilters && <Badge value={filtersCount} />}
+            </View>
+          )}
         </View>
       )}
 
-      {/* Botón principal */}
-      <TouchableOpacity
-        style={styles.mainBtn}
-        activeOpacity={0.9}
-        onPress={onToggle}
-      >
-        <Ionicons name="ellipsis-vertical" size={22} color="#ffffff" />
-      </TouchableOpacity>
+      <View style={{ position: 'relative' }}>
+        <TouchableOpacity
+          onPress={onToggle}
+          style={[styles.mainFab, styles.shadowStrong]}
+          activeOpacity={0.9}
+        >
+          <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
+        </TouchableOpacity>
+        {(!showFilterAction || !onFilter) && hasFilters && <Badge value={filtersCount} />}
+      </View>
     </View>
   );
 }

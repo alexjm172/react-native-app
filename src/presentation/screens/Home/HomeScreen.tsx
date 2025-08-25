@@ -1,26 +1,24 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { DeviceEventEmitter, type EmitterSubscription } from 'react-native';
 
 import CategoryPicker from '../../components/CategoryPicker/CategoryPicker';
 import ArticuloList from '../../components/ArticuloList/ArticulosList';
 import FloatingActions from '../../components/FloatingActions/FloatingActions';
+import HomeFilterSheet from '../../components/FilterSheet/HomeFilterSheet';
 import { homeStyles as styles } from './styles/Home.styles';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { HomeStackParamList } from '../../../app/navigation/stacks/HomeStack';
-import { DeviceEventEmitter, type EmitterSubscription } from 'react-native';
 
 import { ArticuloRepositoryImpl } from '../../../data/repositories/ArticuloRepositoryImpl';
 import { GetArticulosByCategoria } from '../../../domain/usecases/GetArticulosByCategoria';
-
 import { useAuth } from '../../../app/providers/AuthProvider';
 import { UserRepositoryImpl } from '../../../data/repositories/UserRepositoryImpl';
 import { ToggleFavoriteUseCase } from '../../../domain/usecases/ToggleFavoritoUseCase';
-
 import { useHomeVM } from '../../viewmodels/HomeViewModel';
 import type { CategoryId } from '../../viewmodels/types/Category';
+import type { HomeStackParamList } from '../../../app/navigation/stacks/HomeStack';
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -31,37 +29,32 @@ export default function HomeScreen() {
 
   const userRepo = useMemo(() => new UserRepositoryImpl(), []);
   const toggleUC = useMemo(() => new ToggleFavoriteUseCase(userRepo), [userRepo]);
+
   const navigation  = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+
   const {
     categories, selectedId, onChangeCategoria,
-    items, loading, error, reload,
+    filteredItems, loading, error, reload,
     fabOpen, toggleFab, closeFab,
     favorites, onToggleFavorite,
-    refreshFavorites,                
+    refreshFavorites,
+    filters, setFilters,
+    activeFiltersCount,
   } = useHomeVM(uc, currentUid, toggleUC);
 
-  // cada vez que Home gana foco
-  // refrescamos el set de favoritos desde Firestore.
-  useFocusEffect(
-  useCallback(() => {
-    // 1) refresca al ganar foco
-    refreshFavorites();
-    reload();
+  const [sheetVisible, setSheetVisible] = useState(false);
 
-    // 2) escucha actualizaciones de artículos (editar/cambiar categoría, etc.)
-    const sub: EmitterSubscription = DeviceEventEmitter.addListener(
-      'articulo:updated',
-      () => {
-        // recarga datos visibles y favoritos
+  useFocusEffect(
+    useCallback(() => {
+      refreshFavorites();
+      reload();
+      const sub: EmitterSubscription = DeviceEventEmitter.addListener('articulo:updated', () => {
         reload();
         refreshFavorites();
-      }
-    );
-
-    // 3) limpia el listener al perder foco
-    return () => sub.remove();
-  }, [reload, refreshFavorites])
-);
+      });
+      return () => sub.remove();
+    }, [reload, refreshFavorites])
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -73,22 +66,31 @@ export default function HomeScreen() {
         />
 
         <ArticuloList
-          items={items}
+          items={filteredItems}
           loading={loading}
           error={error}
           reload={reload}
           favorites={favorites}
           onToggleFavorite={onToggleFavorite}
-          onPressItem= {(a) => navigation.navigate('ArticuloDetail', { articulo: a })}
+          onPressItem={(a) => navigation.navigate('ArticuloDetail', { articulo: a })}
         />
 
         <FloatingActions
           open={fabOpen}
           onToggle={toggleFab}
-          onAdd={() => { closeFab(); console.log('Añadir artículo'); }}
-          onFilter={() => { closeFab(); console.log('Filtrar artículos'); }}
+          onAdd={() => { closeFab(); /* acción añadir */ }}
+          onFilter={() => { closeFab(); setSheetVisible(true); }}
+          filtersCount={activeFiltersCount} 
+          showFilterAction={true}           
         />
       </View>
+
+      <HomeFilterSheet
+        visible={sheetVisible}
+        onClose={() => setSheetVisible(false)}
+        value={filters}
+        onChange={setFilters}   
+      />
     </SafeAreaView>
   );
 }

@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import type { Articulo } from '../../domain/entities/Articulo';
+import { Estado } from '../../domain/entities/enums/Estado';
 import { GetArticulosByCategoria } from '../../domain/usecases/GetArticulosByCategoria';
 import { ToggleFavoriteUseCase } from '../../domain/usecases/ToggleFavoritoUseCase';
 import { UserRepositoryImpl } from '../../data/repositories/UserRepositoryImpl';
+
 import {
   CATEGORY_IDS,
   CATEGORY_OPTIONS,
@@ -15,12 +18,20 @@ import {
 
 const LAST_CATEGORY_KEY = 'last_category';
 
+export type HomeFiltersVM = {
+  marca: string;
+  estado?: Estado;
+  desde?: string; // YYYY-MM-DD
+  hasta?: string; // YYYY-MM-DD
+};
+
 type VM = {
   categories: CategoryOption[];
   selectedId: CategoryId;
   onChangeCategoria: (id: CategoryId) => void;
 
-  items: Articulo[];
+  items: Articulo[];           
+  filteredItems: Articulo[];  
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
@@ -31,10 +42,15 @@ type VM = {
 
   favorites: Set<string>;
   onToggleFavorite: (articuloId: string) => Promise<void>;
-
-  // 👇 nuevo
   refreshFavorites: () => Promise<void>;
+
+  filters: HomeFiltersVM;
+  setFilters: React.Dispatch<React.SetStateAction<HomeFiltersVM>>;
+  activeFiltersCount: number;
 };
+
+const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+const toStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 export const useHomeVM = (
   ucGetByCategoria: GetArticulosByCategoria,
@@ -48,6 +64,14 @@ export const useHomeVM = (
 
   const [fabOpen, setFabOpen] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Filtros controlados por la VM (aplican en caliente)
+  const [filters, setFilters] = useState<HomeFiltersVM>({
+    marca: '',
+    estado: undefined,
+    desde: undefined,
+    hasta: undefined,
+  });
 
   const categories = useMemo(() => CATEGORY_OPTIONS, []);
   const loadSeq = useRef(0);
@@ -100,7 +124,7 @@ export const useHomeVM = (
   const toggleFab = useCallback(() => setFabOpen(v => !v), []);
   const closeFab  = useCallback(() => setFabOpen(false), []);
 
-  // 👇 nueva función para recargar favoritos desde Firestore
+  // Favoritos desde Firestore
   const refreshFavorites = useCallback(async () => {
     if (!currentUid) {
       setFavorites(new Set());
@@ -111,13 +135,11 @@ export const useHomeVM = (
     setFavorites(new Set(u?.favoritos ?? []));
   }, [currentUid]);
 
-  // carga inicial de favoritos
   useEffect(() => { refreshFavorites(); }, [refreshFavorites]);
 
   const onToggleFavorite = useCallback(async (articuloId: string) => {
     if (!currentUid || !toggleFavUC) return;
 
-    // Optimista
     setFavorites(prev => {
       const next = new Set(prev);
       next.has(articuloId) ? next.delete(articuloId) : next.add(articuloId);
@@ -127,7 +149,6 @@ export const useHomeVM = (
     try {
       await toggleFavUC.execute(currentUid, articuloId);
     } catch {
-      // revertir si falla
       setFavorites(prev => {
         const next = new Set(prev);
         next.has(articuloId) ? next.delete(articuloId) : next.add(articuloId);
@@ -136,12 +157,62 @@ export const useHomeVM = (
     }
   }, [currentUid, toggleFavUC]);
 
+  // ---- Filtros (marca/estado/disponibilidad)
+  const overlaps = (aStart: string, aEnd: string, bStart: string, bEnd: string) => {
+    const A = new Date(aStart), B = new Date(aEnd);
+    const X = new Date(bStart), Y = new Date(bEnd);
+    return A <= Y && B >= X;
+  };
+
+  const passesFilters = useCallback((a: Articulo) => {
+    // Marca contains case-insensitive
+    if (filters.marca?.trim()) {
+      const q = filters.marca.trim().toLowerCase();
+      const hay = (a.marca ?? '').toString().toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    // Estado exacto
+    if (filters.estado && a.estado !== filters.estado) return false;
+    // Disponibilidad (excluir si hay algún alquiler solapado)
+    if (filters.desde && filters.hasta) {
+      const wantStart = filters.desde;
+      const wantEnd   = filters.hasta;
+      const bookings: any[] = Array.isArray(a.alquileres) ? a.alquileres : [];
+      for (const alq of bookings) {
+        const d1 = typeof alq.fechaDesde === 'string'
+          ? alq.fechaDesde
+          : (alq.fechaDesde as any)?.toDate?.() ?? alq.fechaDesde;
+        const d2 = typeof alq.fechaHasta === 'string'
+          ? alq.fechaHasta
+          : (alq.fechaHasta as any)?.toDate?.() ?? alq.fechaHasta;
+        const bs = toStr(new Date(d1 as any));
+        const be = toStr(new Date(d2 as any));
+        if (overlaps(wantStart, wantEnd, bs, be)) return false;
+      }
+    }
+    return true;
+  }, [filters]);
+
+  const filteredItems = useMemo(() => {
+    if (!filters.marca && !filters.estado && !(filters.desde && filters.hasta)) return items;
+    return items.filter(passesFilters);
+  }, [items, filters, passesFilters]);
+
+  const activeFiltersCount = useMemo(() => {
+    let c = 0;
+    if (filters.marca?.trim()) c++;
+    if (filters.estado) c++;
+    if (filters.desde && filters.hasta) c++;
+    return c;
+  }, [filters]);
+
   return {
     categories,
     selectedId,
     onChangeCategoria,
 
     items,
+    filteredItems,
     loading,
     error,
     reload,
@@ -152,8 +223,10 @@ export const useHomeVM = (
 
     favorites,
     onToggleFavorite,
-
-    // expuesto para que HomeScreen lo llame al re-enfocarse
     refreshFavorites,
+
+    filters,
+    setFilters,
+    activeFiltersCount,
   };
 };
