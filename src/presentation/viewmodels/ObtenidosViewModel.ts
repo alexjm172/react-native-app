@@ -1,91 +1,51 @@
+// src/presentation/viewmodels/ObtenidosViewModel.ts
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Articulo } from '../../domain/entities/Articulo';
-import type { Alquiler } from '../../domain/entities/Alquiler';
-import { GetArticulosByIds } from '../../domain/usecases/GetArticulosByIdsUseCase';
+import { UserRepositoryImpl } from '../../data/repositories/UserRepositoryImpl';
+import { ArticuloRepositoryImpl } from '../../data/repositories/ArticuloRepositoryImpl';
+import { GetComprasItemsUseCase } from '../../domain/usecases/GetComprasItemsUseCase';
+import type { PurchasedItem } from '../../domain/entities/PurchasedItem';
 
-export type CompraRef = {
-  articuloId: string;
-  desde?: Date;
-  hasta?: Date;
-  importe?: number;
-};
+const fmt = (d: Date) =>
+  d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 
-export type CompraRow = {
-  articulo: Articulo;
-  desde?: Date;
-  hasta?: Date;
-  importe?: number;
-};
-
-function tsToDate(v: any): Date | undefined {
-  if (!v) return undefined;
-  if (v instanceof Date) return v;
-  if (typeof v?.toDate === 'function') return v.toDate();
-  const n = Date.parse(v);
-  return Number.isFinite(n) ? new Date(n) : undefined;
-}
-
-export function useObtenidosVM(
-  getByIds: GetArticulosByIds,
-  compras: CompraRef[],
-  uid?: string
-) {
-  const [rows, setRows] = useState<CompraRow[]>([]);
+export function useObtenidosVM(uid?: string) {
+  const [items, setItems] = useState<PurchasedItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]     = useState<string|null>(null);
 
-  // ids únicos y clave estable
-  const ids = useMemo(
-    () => Array.from(new Set(compras.map(c => c.articuloId))),
-    [compras]
-  );
-  const idsKey = useMemo(() => ids.join('|'), [ids]);
-  const refMap = useMemo(
-    () => new Map(compras.map(c => [c.articuloId, c])),
-    [compras]
-  );
+  const uc = useMemo(() => {
+    const u = new UserRepositoryImpl();
+    const a = new ArticuloRepositoryImpl();
+    return new GetComprasItemsUseCase(u, a);
+  }, []);
 
   const load = useCallback(async () => {
-    if (!ids.length) { setRows([]); return; }
+    if (!uid) { setItems([]); return; }
     setLoading(true); setError(null);
     try {
-      const arts = await getByIds.execute(ids);
-      const built: CompraRow[] = arts.map((a) => {
-        const ref = refMap.get(a.id);
-        let desde = ref?.desde;
-        let hasta = ref?.hasta;
-        let importe = ref?.importe;
-
-        if ((!desde || !hasta || importe == null) && Array.isArray(a.alquileres)) {
-          const mios = (a.alquileres as Alquiler[]).filter(
-            (alq: any) => String(alq.idUsuario ?? alq.uid) === String(uid ?? '')
-          );
-          // más reciente por fechaHasta
-          mios.sort((x, y) => {
-            const hx = tsToDate((x as any).fechaHasta)?.getTime() ?? 0;
-            const hy = tsToDate((y as any).fechaHasta)?.getTime() ?? 0;
-            return hy - hx;
-          });
-          const pick = mios[0];
-          if (pick) {
-            desde = desde ?? tsToDate((pick as any).fechaDesde);
-            hasta = hasta ?? tsToDate((pick as any).fechaHasta);
-            importe = importe ?? (pick as any).importe;
-          }
-        }
-
-        return { articulo: a, desde, hasta, importe };
-      });
-
-      setRows(built);
+      const list = await uc.execute(uid);
+      setItems(list);
     } catch (e: any) {
-      setError(e?.message ?? 'Error cargando compras');
+      setError(e?.message ?? 'Error cargando tus compras');
     } finally {
       setLoading(false);
     }
-  }, [idsKey, getByIds, refMap, uid]);
+  }, [uid, uc]);
 
   useEffect(() => { load(); }, [load]);
 
-  return { rows, loading, error, reload: load };
+  const statusOf = useCallback((from: Date, to: Date) => {
+    const now = new Date();
+    if (now < from) return 'future' as const;
+    if (now > to)   return 'past'   as const;
+    return 'active' as const;
+  }, []);
+
+  const isActive = useCallback((from: Date, to: Date) => statusOf(from, to) === 'active', [statusOf]);
+  const periodText = useCallback((from: Date, to: Date) => `${fmt(from)} — ${fmt(to)}`, []);
+
+  return {
+    items, loading, error, reload: load,
+    isActive, periodText, statusOf,
+  };
 }

@@ -1,83 +1,94 @@
-import React, { useMemo } from 'react';
+import React from 'react';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+
 import { useAuth } from '../../../../app/providers/AuthProvider';
-import { ArticuloRepositoryImpl } from '../../../../data/repositories/ArticuloRepositoryImpl';
-import { GetArticulosByIds } from '../../../../domain/usecases/GetArticulosByIdsUseCase';
-import { useObtenidosVM, type CompraRef } from '../../../viewmodels/ObtenidosViewModel';
-import ArticuloListCompras from '../../../components/ArticuloList/ArticuloListCompras';
-import { favoritosStyles as page } from '../destinations/styles/Favoritos.styles';
-
-function tsToDate(v: any): Date | undefined {
-  if (!v) return undefined;
-  if (v instanceof Date) return v;
-  if (typeof v?.toDate === 'function') return v.toDate(); // Firestore Timestamp
-  const n = Date.parse(v);
-  return Number.isFinite(n) ? new Date(n) : undefined;
-}
-
-function normalizeCompras(input: unknown): CompraRef[] {
-  if (!Array.isArray(input)) return [];
-  const out: CompraRef[] = [];
-  for (const it of input) {
-    if (typeof it === 'string') {
-      out.push({ articuloId: it });
-      continue;
-    }
-    if (it && typeof it === 'object') {
-      const o = it as Record<string, any>;
-      const articuloId =
-        o.articuloId ?? o.idArticulo ?? o.itemId ?? o.id ?? o.articulo ?? '';
-      if (!articuloId) continue;
-
-      out.push({
-        articuloId: String(articuloId),
-        desde: tsToDate(o.fechaDesde ?? o.desde ?? o.start ?? o.inicio),
-        hasta: tsToDate(o.fechaHasta ?? o.hasta ?? o.end ?? o.fin),
-        importe:
-          typeof o.importe === 'number'
-            ? o.importe
-            : Number.isFinite(+o.importe)
-            ? +o.importe
-            : undefined,
-      });
-    }
-  }
-  // dedup por articuloId (último gana)
-  const map = new Map<string, CompraRef>();
-  for (const r of out) map.set(r.articuloId, r);
-  return [...map.values()];
-}
+import { useObtenidosVM } from '../../../viewmodels/ObtenidosViewModel';
+import { articuloListStyles as card } from '../../../components/ArticuloList/styles/ArticuloList.styles';
+import ArticuloThumb from '../../../components/ArticuloList/components/ArticuloThumb';
+import { obtenidosStyles as styles } from './styles/Obtenidos.styles';
 
 export default function ObtenidosScreen() {
   const { user } = useAuth();
   const uid = user?.id;
 
-  // 👇 memo para que no cambie en cada render
-  const comprasRefs = useMemo(
-    () => normalizeCompras((user as any)?.compras),
-    [user?.compras]
-  );
+  const { items, loading, error, reload, periodText, statusOf } = useObtenidosVM(uid);
+  const nav = useNavigation<any>();
 
-  if (__DEV__) {
-    console.log('[Obtenidos] raw compras:', (user as any)?.compras);
-    console.log('[Obtenidos] refs:', comprasRefs);
+  if (loading && items.length === 0) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={[card.center, { flex:1 }]}><ActivityIndicator /></View>
+      </SafeAreaView>
+    );
+  }
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={[card.center, { flex:1 }]}><Text style={card.error}>{error}</Text></View>
+      </SafeAreaView>
+    );
   }
 
-  const artRepo  = useMemo(() => new ArticuloRepositoryImpl(), []);
-  const getByIds = useMemo(() => new GetArticulosByIds(artRepo), [artRepo]);
-
-  const { rows, loading, error, reload } = useObtenidosVM(getByIds, comprasRefs, uid);
-
   return (
-    <SafeAreaView style={page.container}>
-      <ArticuloListCompras
-        rows={rows}
-        loading={loading}
-        error={error}
-        reload={reload}
-        extraContentStyle={page.listContent}
-        rowWrapperStyle={{ marginBottom: 12 }}
-      />
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        <FlatList
+          data={items}
+          keyExtractor={(it) => `${it.alquiler.idAlquiler}::${it.articulo.id}`}
+          contentContainerStyle={card.content}
+          onRefresh={reload}
+          refreshing={loading}
+          renderItem={({ item }) => {
+            const a = item.articulo;
+            const alq = item.alquiler;
+
+            const st = statusOf(alq.fechaDesde, alq.fechaHasta);
+            const chipCfg =
+              st === 'active'
+                ? { label: 'En alquiler', bg: '#f97316' }     
+                : st === 'future'
+                ? { label: 'Reservado',   bg: '#3b82f6' }     
+                : { label: 'Finalizado',  bg: '#94a3b8' };    
+
+            return (
+              <TouchableOpacity
+                style={card.row}
+                activeOpacity={0.9}
+                onPress={() => nav.navigate('ArticuloDetail', { articulo: a })}
+              >
+                <View style={card.rowTop}>
+                  <ArticuloThumb articulo={a} size={64} />
+                  <View style={card.rowBody}>
+                    <Text style={card.rowTitle}>{a.nombre}</Text>
+                    <Text style={card.rowSub}>{a.marca ?? 'Sin marca'}</Text>
+                    <Text style={card.rowSub}>
+                      {(a.precioPorHora ?? '-') + '€/h · ' + (a.precioPorDia ?? '-') + '€/día · ' + (a.precioPorSemana ?? '-') + '€/sem'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={{ marginTop: 10 }}>
+                  <View style={[styles.chip, { backgroundColor: chipCfg.bg }]}>
+                    <Text style={styles.chipTxt}>{chipCfg.label}</Text>
+                  </View>
+
+                  <View style={styles.metaRow}>
+                    <Text style={styles.metaTxt}>{periodText(alq.fechaDesde, alq.fechaHasta)}</Text>
+                    <Text style={styles.metaTxt}>Importe: {alq.importe?.toFixed(2) ?? '—'}€</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={card.empty}>
+              <Text style={card.emptyText}>Aún no has alquilado artículos</Text>
+            </View>
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 }
