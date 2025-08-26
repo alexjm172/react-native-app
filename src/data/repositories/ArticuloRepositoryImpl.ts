@@ -4,6 +4,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { distanceBetween } from 'geofire-common';
+import { doc } from 'firebase/firestore';
 
 import { itemsCollectionRef, itemDocRef, itemsCollectionGroupRef } from '../datasources/remote/firebasePaths';
 import { articuloFromSnapshot, articuloToDoc } from '../mappers/articulo.mapper';
@@ -14,6 +15,7 @@ import type { ArticuloRepository, GeoQuery } from '../../domain/repositories/Art
 const CATEGORY_DOC_IDS = ['Cocina','Deporte','Electricidad','Electrónica','Jardinería'] as const;
 
 export class ArticuloRepositoryImpl implements ArticuloRepository {
+  
   async getByCategoria(categoria: string): Promise<Articulo[]> {
     const snap = await getDocs(itemsCollectionRef(categoria));
     return snap.docs.map(articuloFromSnapshot);
@@ -108,5 +110,10 @@ export class ArticuloRepositoryImpl implements ArticuloRepository {
       { imagenes, imagenesPaths },
       { merge: true }
     );
+  }
+
+  async newId(categoria: string): Promise<string> {
+    const d = doc(itemsCollectionRef(categoria));
+    return d.id;
   }
 }

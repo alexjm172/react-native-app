@@ -21,4 +21,5 @@ export interface ArticuloRepository {
     imagenes: string[],       
     imagenesPaths: string[],  
   ): Promise<void>;
+  newId(categoria: string): Promise<string>;
 }

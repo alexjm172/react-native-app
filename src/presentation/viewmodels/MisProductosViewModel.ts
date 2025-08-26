@@ -16,7 +16,7 @@ export function useMisProductosVM(getByIds: GetArticulosByIds, ids?: string[]) {
     setLoading(true);
     setError(null);
     try {
-      const list = await getByIds.execute(listIds); // ✅ ahora pasamos IDs (no uid)
+      const list = await getByIds.execute(listIds); 
       setItems(list);
     } catch (e: any) {
       setError(e?.message ?? 'Error cargando tus artículos');

@@ -1,7 +1,7 @@
-import { getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
 import type { User } from '../../domain/entities/User';
 import type { UserRepository } from '../../domain/repositories/UserRepository';
-import { userDocRef } from '../datasources/remote/firebasePaths';
+import { userDocRef, usersCollectionRef } from '../datasources/remote/firebasePaths';
 
 export class UserRepositoryImpl implements UserRepository {
   async getById(userId: string): Promise<User | null> {
@@ -20,5 +20,10 @@ export class UserRepositoryImpl implements UserRepository {
     } else {
       await updateDoc(ref, { favoritos: arrayRemove(articuloId) });
     }
+  }
+
+  async addArticulo(uid: string, articuloId: string): Promise<void> {
+    const ref = doc(usersCollectionRef(), uid);
+    await updateDoc(ref, { articulos: arrayUnion(articuloId) });
   }
 }

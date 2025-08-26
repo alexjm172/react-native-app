@@ -78,7 +78,7 @@ export default function HomeScreen() {
         <FloatingActions
           open={fabOpen}
           onToggle={toggleFab}
-          onAdd={() => { closeFab(); /* acción añadir */ }}
+          onAdd={() => { closeFab(); navigation.navigate('ArticuloCreate'); }}
           onFilter={() => { closeFab(); setSheetVisible(true); }}
           filtersCount={activeFiltersCount} 
           showFilterAction={true}           
