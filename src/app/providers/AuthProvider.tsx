@@ -2,19 +2,20 @@ import React, { createContext, useContext, useEffect, useMemo, useState, useCall
 import { AuthRepositoryImpl } from '../../data/repositories/AuthRepositoryImpl';
 import { ObserveAuth } from '../../domain/usecases/auth/ObserveAuth';
 import { SignOut } from '../../domain/usecases/auth/SignOut';
-import { User } from '../../domain/entities/User';
+import type { User } from '../../domain/entities/User';
 
 type CtxValue = {
   user: User | null;
   initializing: boolean;
   signOut: () => Promise<void>;
+  patchUser: (patch: Partial<User>) => void; 
 };
 
 const Ctx = createContext<CtxValue>({
   user: null,
   initializing: true,
-  // no-op por defecto
   signOut: async () => {},
+  patchUser: () => {},                      
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -37,7 +38,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signOutUC.exec();
   }, [signOutUC]);
 
-  const value = useMemo(() => ({ user, initializing, signOut }), [user, initializing, signOut]);
+  const patchUser = useCallback((patch: Partial<User>) => {
+    setUser(prev => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
+  const value = useMemo(
+    () => ({ user, initializing, signOut, patchUser }),
+    [user, initializing, signOut, patchUser]
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };

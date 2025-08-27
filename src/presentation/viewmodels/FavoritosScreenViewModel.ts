@@ -9,11 +9,9 @@ import { GetArticulosByIds } from '../../domain/usecases/GetArticulosByIdsUseCas
 import { ToggleFavoriteUseCase } from '../../domain/usecases/ToggleFavoritoUseCase';
 
 export function FavoritosScreenViewModel() {
-  // Usuario actual del contexto
-  const { user } = useAuth();
+  const { user, patchUser } = useAuth();
   const currentUid = user?.id;
 
-  // DI mínima aquí para simplificar la pantalla
   const artRepo  = useMemo(() => new ArticuloRepositoryImpl(), []);
   const getByIds = useMemo(() => new GetArticulosByIds(artRepo), [artRepo]);
 
@@ -26,19 +24,15 @@ export function FavoritosScreenViewModel() {
   const [error,   setError]   = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    // ⚠️ Tomamos los IDs directamente del usuario en memoria
     const ids = user?.favoritos ?? [];
     if (!ids.length) {
-      setItems([]);
-      setFavorites(new Set());
-      return;
+      setItems([]); setFavorites(new Set()); return;
     }
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const list = await getByIds.execute(ids);
       setItems(list);
-      setFavorites(new Set(ids)); // estado del icono
+      setFavorites(new Set(ids));
     } catch (e: any) {
       setError(e?.message ?? 'Error cargando favoritos');
     } finally {
@@ -46,45 +40,48 @@ export function FavoritosScreenViewModel() {
     }
   }, [user?.favoritos, getByIds]);
 
-  // carga inicial + cuando cambie la lista de favoritos del usuario en Auth
   useEffect(() => { load(); }, [load]);
 
-  /** Alterna favorito; devuelve true si queda como favorito, false si se quita */
   const onToggleFavorite = useCallback(async (articuloId: string): Promise<boolean> => {
     if (!currentUid) return true;
 
     const willBeFav = !favorites.has(articuloId);
 
-    // Optimista para el icono
+    // Optimista + Auth
+    let nextList: string[] = [];
     setFavorites(prev => {
       const next = new Set(prev);
       willBeFav ? next.add(articuloId) : next.delete(articuloId);
+      nextList = Array.from(next);
       return next;
     });
+    patchUser?.({ favoritos: nextList });
 
     try {
       await toggleUC.execute(currentUid, articuloId);
       return willBeFav;
     } catch {
-      // Revertir si falla
+      // Revertir y Auth
       setFavorites(prev => {
         const next = new Set(prev);
         willBeFav ? next.delete(articuloId) : next.add(articuloId);
+        nextList = Array.from(next);
         return next;
       });
+      patchUser?.({ favoritos: nextList });
       return !willBeFav;
     }
-  }, [currentUid, toggleUC, favorites]);
+  }, [currentUid, toggleUC, favorites, patchUser]);
 
-  // Quita localmente un artículo de la lista (lo llama la vista tras la animación)
   const removeLocal = useCallback((articuloId: string) => {
     setItems(prev => prev.filter(a => a.id !== articuloId));
     setFavorites(prev => {
       const next = new Set(prev);
       next.delete(articuloId);
+      patchUser?.({ favoritos: Array.from(next) });
       return next;
     });
-  }, []);
+  }, [patchUser]);
 
   return { items, favorites, loading, error, reload: load, onToggleFavorite, removeLocal };
 }

@@ -30,8 +30,8 @@ type VM = {
   selectedId: CategoryId;
   onChangeCategoria: (id: CategoryId) => void;
 
-  items: Articulo[];           
-  filteredItems: Articulo[];  
+  items: Articulo[];
+  filteredItems: Articulo[];
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
@@ -49,6 +49,7 @@ type VM = {
   activeFiltersCount: number;
 };
 
+// helpers
 const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
 const toStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
@@ -56,6 +57,8 @@ export const useHomeVM = (
   ucGetByCategoria: GetArticulosByCategoria,
   currentUid?: string,
   toggleFavUC?: ToggleFavoriteUseCase,
+  // para propagar favoritos al contexto Auth 
+  patchUser?: (patch: Partial<{ favoritos: string[] }>) => void,
 ): VM => {
   const [selectedId, setSelectedId] = useState<CategoryId>(DEFAULT_CATEGORY);
   const [items, setItems] = useState<Articulo[]>([]);
@@ -65,13 +68,7 @@ export const useHomeVM = (
   const [fabOpen, setFabOpen] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-  // Filtros controlados por la VM (aplican en caliente)
-  const [filters, setFilters] = useState<HomeFiltersVM>({
-    marca: '',
-    estado: undefined,
-    desde: undefined,
-    hasta: undefined,
-  });
+  const [filters, setFilters] = useState<HomeFiltersVM>({ marca: '' });
 
   const categories = useMemo(() => CATEGORY_OPTIONS, []);
   const loadSeq = useRef(0);
@@ -128,34 +125,44 @@ export const useHomeVM = (
   const refreshFavorites = useCallback(async () => {
     if (!currentUid) {
       setFavorites(new Set());
+      patchUser?.({ favoritos: [] });
       return;
     }
     const urepo = new UserRepositoryImpl();
     const u = await urepo.getById(currentUid);
-    setFavorites(new Set(u?.favoritos ?? []));
-  }, [currentUid]);
+    const list = u?.favoritos ?? [];
+    setFavorites(new Set(list));
+    patchUser?.({ favoritos: list });
+  }, [currentUid, patchUser]);
 
   useEffect(() => { refreshFavorites(); }, [refreshFavorites]);
 
   const onToggleFavorite = useCallback(async (articuloId: string) => {
     if (!currentUid || !toggleFavUC) return;
 
+    // Optimista + reflejar en Auth
+    let nextList: string[] = [];
     setFavorites(prev => {
       const next = new Set(prev);
       next.has(articuloId) ? next.delete(articuloId) : next.add(articuloId);
+      nextList = Array.from(next);
       return next;
     });
+    patchUser?.({ favoritos: nextList });
 
     try {
       await toggleFavUC.execute(currentUid, articuloId);
     } catch {
+      // revertir si falla
       setFavorites(prev => {
         const next = new Set(prev);
         next.has(articuloId) ? next.delete(articuloId) : next.add(articuloId);
+        nextList = Array.from(next);
         return next;
       });
+      patchUser?.({ favoritos: nextList });
     }
-  }, [currentUid, toggleFavUC]);
+  }, [currentUid, toggleFavUC, patchUser]);
 
   // ---- Filtros (marca/estado/disponibilidad)
   const overlaps = (aStart: string, aEnd: string, bStart: string, bEnd: string) => {
@@ -165,15 +172,12 @@ export const useHomeVM = (
   };
 
   const passesFilters = useCallback((a: Articulo) => {
-    // Marca contains case-insensitive
     if (filters.marca?.trim()) {
       const q = filters.marca.trim().toLowerCase();
       const hay = (a.marca ?? '').toString().toLowerCase();
       if (!hay.includes(q)) return false;
     }
-    // Estado exacto
     if (filters.estado && a.estado !== filters.estado) return false;
-    // Disponibilidad (excluir si hay algún alquiler solapado)
     if (filters.desde && filters.hasta) {
       const wantStart = filters.desde;
       const wantEnd   = filters.hasta;

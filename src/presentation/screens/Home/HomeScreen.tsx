@@ -21,7 +21,7 @@ import type { CategoryId } from '../../viewmodels/types/Category';
 import type { HomeStackParamList } from '../../../app/navigation/stacks/HomeStack';
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, patchUser } = useAuth();
   const currentUid = user?.id;
 
   const repo = useMemo(() => new ArticuloRepositoryImpl(), []);
@@ -40,7 +40,7 @@ export default function HomeScreen() {
     refreshFavorites,
     filters, setFilters,
     activeFiltersCount,
-  } = useHomeVM(uc, currentUid, toggleUC);
+  } = useHomeVM(uc, currentUid, toggleUC, patchUser);
 
   const [sheetVisible, setSheetVisible] = useState(false);
 
