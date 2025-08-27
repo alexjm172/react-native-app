@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Articulo } from '../../domain/entities/Articulo';
-
 import { useAuth } from '../../app/providers/AuthProvider';
 import { ArticuloRepositoryImpl } from '../../data/repositories/ArticuloRepositoryImpl';
 import { UserRepositoryImpl } from '../../data/repositories/UserRepositoryImpl';
-
 import { GetArticulosByIds } from '../../domain/usecases/GetArticulosByIdsUseCase';
 import { ToggleFavoriteUseCase } from '../../domain/usecases/ToggleFavoritoUseCase';
 
@@ -25,9 +23,7 @@ export function FavoritosScreenViewModel() {
 
   const load = useCallback(async () => {
     const ids = user?.favoritos ?? [];
-    if (!ids.length) {
-      setItems([]); setFavorites(new Set()); return;
-    }
+    if (!ids.length) { setItems([]); setFavorites(new Set()); return; }
     setLoading(true); setError(null);
     try {
       const list = await getByIds.execute(ids);
@@ -47,41 +43,33 @@ export function FavoritosScreenViewModel() {
 
     const willBeFav = !favorites.has(articuloId);
 
-    // Optimista + Auth
-    let nextList: string[] = [];
-    setFavorites(prev => {
-      const next = new Set(prev);
-      willBeFav ? next.add(articuloId) : next.delete(articuloId);
-      nextList = Array.from(next);
-      return next;
-    });
-    patchUser?.({ favoritos: nextList });
+    // 1) optimista local
+    const next = new Set(favorites);
+    willBeFav ? next.add(articuloId) : next.delete(articuloId);
+    setFavorites(next);
 
     try {
+      // 2) remoto
       await toggleUC.execute(currentUid, articuloId);
+      // 3) reflejar en Auth *fuera* de cualquier setState/callback
+      patchUser({ favoritos: Array.from(next) });
       return willBeFav;
     } catch {
-      // Revertir y Auth
-      setFavorites(prev => {
-        const next = new Set(prev);
-        willBeFav ? next.delete(articuloId) : next.add(articuloId);
-        nextList = Array.from(next);
-        return next;
-      });
-      patchUser?.({ favoritos: nextList });
+      // revertir
+      const revert = new Set(next);
+      willBeFav ? revert.delete(articuloId) : revert.add(articuloId);
+      setFavorites(revert);
+      patchUser({ favoritos: Array.from(revert) });
       return !willBeFav;
     }
-  }, [currentUid, toggleUC, favorites, patchUser]);
+  }, [currentUid, favorites, toggleUC, patchUser]);
 
   const removeLocal = useCallback((articuloId: string) => {
     setItems(prev => prev.filter(a => a.id !== articuloId));
     setFavorites(prev => {
-      const next = new Set(prev);
-      next.delete(articuloId);
-      patchUser?.({ favoritos: Array.from(next) });
-      return next;
+      const n = new Set(prev); n.delete(articuloId); return n;
     });
-  }, [patchUser]);
+  }, []);
 
   return { items, favorites, loading, error, reload: load, onToggleFavorite, removeLocal };
 }

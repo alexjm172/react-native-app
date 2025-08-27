@@ -46,12 +46,25 @@ export default function MapaScreen() {
   const mapRef = useRef<MapView | null>(null);
   const markerRefs = useRef<Record<string, MarkerRef | null>>({});
 
+  // función util para reabrir el callout tras cambiar estado
+  const reopenCallout = (id: string) => {
+    // dos ticks por si hay animación de layout
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const m = markerRefs.current[id];
+        // @ts-ignore: RN Maps tiene showCallout()
+        m?.showCallout?.();
+      }, 0);
+    });
+  };
+
   useEffect(() => {
     if (!focus || !region || !mapRef.current) return;
     mapRef.current.animateToRegion(toRegion(focus.latitude, focus.longitude), 350);
     const tryOpen = () => {
       const m = markerRefs.current[focus.id];
-      if (m && typeof m.showCallout === 'function') m.showCallout();
+      // @ts-ignore
+      if (m?.showCallout) m.showCallout();
       else setTimeout(tryOpen, 120);
     };
     tryOpen();
@@ -84,7 +97,9 @@ export default function MapaScreen() {
               coordinate={{ latitude: lat, longitude: lng }}
               anchor={{ x: 0.5, y: 1 }}
               calloutAnchor={{ x: 0.5, y: 0 }}
+              // tracksViewChanges={false} // opcional para performance
             >
+              {/* ❌ SIN key dinámica para que no se destruya */}
               <Callout tooltip>
                 <View style={styles.callout}>
                   <View style={styles.coTopRow}>
@@ -101,11 +116,17 @@ export default function MapaScreen() {
                   </View>
 
                   <View style={styles.coButtonsRow}>
-                    <CalloutSubview onPress={() => onToggleFavorite(it.id)} style={styles.coBtn}>
+                    <CalloutSubview
+                      onPress={() => { onToggleFavorite(it.id); reopenCallout(it.id); }} // ✅ reabrir
+                      style={styles.coBtn}
+                    >
                       <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={18} color="#fff" />
                     </CalloutSubview>
 
-                    <CalloutSubview onPress={() => cartToggle(it.id)} style={styles.coBtn}>
+                    <CalloutSubview
+                      onPress={() => { cartToggle(it.id); reopenCallout(it.id); }}       // ✅ reabrir
+                      style={styles.coBtn}
+                    >
                       <Ionicons name={inCart ? 'cart' : 'cart-outline'} size={18} color="#fff" />
                     </CalloutSubview>
                   </View>

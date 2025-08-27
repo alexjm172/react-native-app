@@ -1,25 +1,37 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getInitialRegion, saveRegion, radiusFromRegion, type Region } from '../../core/location';
+import {
+  getInitialRegion,
+  saveRegion,
+  radiusFromRegion,
+  type Region,
+} from '../../core/location';
 import type { Articulo } from '../../domain/entities/Articulo';
 import type { GetArticulosByGeoUseCase } from '../../domain/usecases/GetArticuloByGeoUseCase';
 import type { ToggleFavoriteUseCase } from '../../domain/usecases/ToggleFavoritoUseCase';
 import { UserRepositoryImpl } from '../../data/repositories/UserRepositoryImpl';
 
+/**
+ * VM de mapa:
+ * - Carga artículos por región
+ * - Mantiene y sincroniza favoritos con Auth (patchUser diferido para evitar setState-during-render)
+ */
 export function useMapaVM(
   getByGeo: GetArticulosByGeoUseCase,
   currentUid?: string,
   toggleFavUC?: ToggleFavoriteUseCase,
-  // para propagar al Auth inmediatamente 
   patchUser?: (patch: Partial<{ favoritos: string[] }>) => void,
-  // lista actual desde Auth → reaccionar a cambios externos (Home/Favoritos) 
-  favoritesFromAuth?: string[],
+  authFavorites?: string[] | null,
 ) {
   const [region, setRegion] = useState<Region | null>(null);
   const [items, setItems] = useState<Articulo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  // favoritos locales sincronizados con Auth
+  const [favorites, setFavorites] = useState<Set<string>>(new Set(authFavorites ?? []));
+  useEffect(() => {
+    setFavorites(new Set(authFavorites ?? []));
+  }, [authFavorites]);
 
   const fetchArticulos = useCallback(async (r: Region) => {
     setLoading(true);
@@ -52,55 +64,50 @@ export function useMapaVM(
     fetchArticulos(r);
   }, [fetchArticulos]);
 
-  // Escucha cambios del Auth (cuando Home/Favoritos alteren favoritos)
-  useEffect(() => {
-    if (favoritesFromAuth) setFavorites(new Set(favoritesFromAuth));
-  }, [favoritesFromAuth]);
-
-  // Carga inicial desde Firestore (y propaga a Auth)
+  // refresco manual desde Firestore si hiciera falta
   const refreshFavorites = useCallback(async () => {
     if (!currentUid) {
       setFavorites(new Set());
-      patchUser?.({ favoritos: [] });
       return;
     }
     const urepo = new UserRepositoryImpl();
     const u = await urepo.getById(currentUid);
-    const list = u?.favoritos ?? [];
-    setFavorites(new Set(list));
-    patchUser?.({ favoritos: list });
+    setFavorites(new Set(u?.favoritos ?? []));
+    // reflejar en auth sin bloquear el render
+    Promise.resolve().then(() => patchUser?.({ favoritos: u?.favoritos ?? [] }));
   }, [currentUid, patchUser]);
 
-  useEffect(() => { refreshFavorites(); }, [refreshFavorites]);
-
+  // toggle optimista + patchUser diferido (evita el warning)
   const onToggleFavorite = useCallback(async (articuloId: string) => {
     if (!currentUid || !toggleFavUC) return;
 
-    // Optimista + reflejo en Auth
-    let nextList: string[] = [];
-    setFavorites(prev => {
-      const next = new Set(prev);
-      next.has(articuloId) ? next.delete(articuloId) : next.add(articuloId);
-      nextList = Array.from(next);
-      return next;
-    });
-    patchUser?.({ favoritos: nextList });
+    const next = new Set(favorites);
+    next.has(articuloId) ? next.delete(articuloId) : next.add(articuloId);
+
+    // optimista
+    setFavorites(next);
+    Promise.resolve().then(() => patchUser?.({ favoritos: Array.from(next) }));
 
     try {
       await toggleFavUC.execute(currentUid, articuloId);
     } catch {
-      setFavorites(prev => {
-        const next = new Set(prev);
-        next.has(articuloId) ? next.delete(articuloId) : next.add(articuloId);
-        nextList = Array.from(next);
-        return next;
-      });
-      patchUser?.({ favoritos: nextList });
+      // revertir
+      const revert = new Set(next);
+      revert.has(articuloId) ? revert.delete(articuloId) : revert.add(articuloId);
+      setFavorites(revert);
+      Promise.resolve().then(() => patchUser?.({ favoritos: Array.from(revert) }));
     }
-  }, [currentUid, toggleFavUC, patchUser]);
+  }, [currentUid, toggleFavUC, favorites, patchUser]);
 
   return {
-    region, items, loading, error, onRegionChangeComplete,
-    favorites, onToggleFavorite, refreshFavorites,
+    region,
+    items,
+    loading,
+    error,
+    onRegionChangeComplete,
+
+    favorites,
+    onToggleFavorite,
+    refreshFavorites,
   };
 }
