@@ -79,8 +79,14 @@ export const useHomeVM = (
     try {
       const collectionId = toFirestoreDocId(cat);
       const list = await ucGetByCategoria.execute(collectionId);
+
+      // EXCLUIR ARTÍCULOS DEL USUARIO AUTENTICADO 
+      const base = currentUid
+        ? list.filter(a => a.idPropietario !== currentUid)
+        : list;
+
       if (mySeq === loadSeq.current) {
-        setItems(list);
+        setItems(base);
         await AsyncStorage.setItem(LAST_CATEGORY_KEY, cat);
       }
     } catch (e: any) {
@@ -88,7 +94,7 @@ export const useHomeVM = (
     } finally {
       if (mySeq === loadSeq.current) setLoading(false);
     }
-  }, [ucGetByCategoria]);
+  }, [ucGetByCategoria, currentUid]);
 
   useEffect(() => {
     let alive = true;

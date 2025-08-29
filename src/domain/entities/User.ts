@@ -8,6 +8,6 @@ export type User = {
   alquileres?: string[];     // ids
   favoritos: string[];       // ids de artículos
   articulos: string[];       // ids publicados por el usuario
-  compras: string[];         // si aplica
+  compras: string[];         // compras realizadas
   newUser: boolean;
 };

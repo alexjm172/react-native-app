@@ -33,38 +33,49 @@ function getIconName(routeName: keyof MainTabsParamList, focused: boolean): Ioni
 
 const ROOT_BY_TAB: Record<keyof MainTabsParamList, string> = {
   HomeTab: 'Home',
-  CarritoTab: 'Carrito', // pantalla raíz del stack Carrito
+  CarritoTab: 'Carrito', 
   MapaTab: 'Mapa',
   ProfileTab: 'Profile',
 };
 
 export default function MainTabs() {
   const insets = useSafeAreaInsets();
-  const { count } = useCart(); // 👈 nº de items del carrito
-  const height = 56 + insets.bottom;
-  const paddingBottom = Math.max(8, insets.bottom);
+  const { count } = useCart();
+
+  const bottom = Math.max(insets.bottom, 12);     
+  const tabHeight = 56 + bottom;
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => {
         const root = ROOT_BY_TAB[route.name as keyof MainTabsParamList];
         const nested = getFocusedRouteNameFromRoute(route);
-        const hide = nested != null && nested !== root; // oculta si no está en la raíz del stack
+        const hide = nested != null && nested !== root;
 
         return {
           headerShown: false,
           tabBarHideOnKeyboard: true,
+
           tabBarActiveTintColor: COLORS.pantone,
           tabBarInactiveTintColor: (COLORS as any).textMuted ?? '#8A8A8A',
+
+          // 👇 aplica safe-area también en Android
           tabBarStyle: hide
             ? { display: 'none' }
             : {
                 backgroundColor: (COLORS as any).tabBg ?? '#fff',
                 borderTopColor: 'transparent',
-                height: Platform.select({ ios: height, android: 60 }),
-                paddingBottom: Platform.select({ ios: paddingBottom, android: 8 }),
+                elevation: 10,                    // sombra Android
+                height: tabHeight,                // 56 + insets.bottom
                 paddingTop: 6,
+                paddingBottom: bottom,            // insets.bottom (o mínimo)
               },
+
+          // 👇 rellena el área segura inferior con el mismo color (evita “huecos”)
+          tabBarBackground: () => (
+            <View style={{ flex: 1, backgroundColor: (COLORS as any).tabBg ?? '#fff' }} />
+          ),
+
           tabBarIcon: ({ focused, color, size }) => {
             const name = getIconName(route.name as keyof MainTabsParamList, focused);
             const showBadge = route.name === 'CarritoTab' && count > 0;
@@ -77,18 +88,14 @@ export default function MainTabs() {
                     accessibilityLabel={`${count} en carrito`}
                     style={{
                       position: 'absolute',
-                      top: -2,
-                      right: -6,
-                      minWidth: 16,
-                      height: 16,
-                      borderRadius: 8,
+                      top: -2, right: -6,
+                      minWidth: 16, height: 16, borderRadius: 8,
                       backgroundColor: '#EF4444',
                       paddingHorizontal: 4,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      alignItems: 'center', justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }} numberOfLines={1}>
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
                       {count > 99 ? '99+' : String(count)}
                     </Text>
                   </View>
@@ -102,7 +109,7 @@ export default function MainTabs() {
     >
       <Tab.Screen name="HomeTab"    component={HomeStack} />
       <Tab.Screen name="CarritoTab" component={CarritoStack} />
-      <Tab.Screen name="MapaTab"    component={MapaStack}  />
+      <Tab.Screen name="MapaTab"    component={MapaStack} />
       <Tab.Screen name="ProfileTab" component={ProfileStack} />
     </Tab.Navigator>
   );

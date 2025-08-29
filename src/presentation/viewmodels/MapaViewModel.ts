@@ -14,6 +14,7 @@ import { UserRepositoryImpl } from '../../data/repositories/UserRepositoryImpl';
  * VM de mapa:
  * - Carga artículos por región
  * - Mantiene y sincroniza favoritos con Auth (patchUser diferido para evitar setState-during-render)
+ * - Excluye artículos del usuario autenticado (idPropietario === currentUid)
  */
 export function useMapaVM(
   getByGeo: GetArticulosByGeoUseCase,
@@ -42,13 +43,19 @@ export function useMapaVM(
         longitude: r.longitude,
         radiusMeters: radiusFromRegion(r),
       });
-      setItems(list);
+
+      //  Excluir artículos del propietario actual (client-side)
+      const base = currentUid
+        ? list.filter(a => a.idPropietario !== currentUid)
+        : list;
+
+      setItems(base);
     } catch (e: any) {
       setError(e?.message ?? 'Error al cargar artículos cercanos');
     } finally {
       setLoading(false);
     }
-  }, [getByGeo]);
+  }, [getByGeo, currentUid]); // depende de currentUid para re-aplicar exclusión
 
   useEffect(() => {
     (async () => {
@@ -63,6 +70,11 @@ export function useMapaVM(
     saveRegion(r).catch(() => {});
     fetchArticulos(r);
   }, [fetchArticulos]);
+
+  // Si cambia el usuario autenticado, recargar con la región actual
+  useEffect(() => {
+    if (region) fetchArticulos(region);
+  }, [currentUid, region, fetchArticulos]);
 
   // refresco manual desde Firestore si hiciera falta
   const refreshFavorites = useCallback(async () => {

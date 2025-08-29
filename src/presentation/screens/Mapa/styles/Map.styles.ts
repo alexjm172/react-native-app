@@ -5,7 +5,7 @@ export const mapStyles = StyleSheet.create({
   fill: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Card del callout
+  // ===== iOS Callout =====
   callout: {
     width: 260,
     backgroundColor: '#fff',
@@ -94,5 +94,45 @@ export const mapStyles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#fff',
+  },
+
+  // ===== ANDROID Overlay (tarjeta flotante) =====
+  overlayWrap: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: Platform.select({ ios: 20, android: 20 }),
+    backgroundColor: '#111',
+    borderRadius: 14,
+    padding: 12,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+  },
+  overlayRow: { flexDirection: 'row', alignItems: 'center' },
+  overlayImgWrap: {
+    width: 68,
+    height: 68,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#222',
+    marginRight: 12,
+  },
+  overlayImg: { width: '100%', height: '100%' },
+  overlayImgPh: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  overlayImgPhTxt: { color: '#aaa', fontSize: 12 },
+  overlayBody: { flex: 1 },
+  overlayTitle: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  overlaySub: { color: '#bbb', fontSize: 12, marginTop: 2 },
+  overlayActions: { flexDirection: 'row', marginTop: 10, gap: 10 },
+  overlayBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#333',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
